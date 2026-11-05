@@ -4,6 +4,7 @@
 # --- Environment & secrets ---
 .env
 .env.*
+!.env.example
 .env.save
 gmail_credentials.json
 gmail_token.json
@@ -21,8 +22,9 @@ usage.csv
 # --- Backups ---
 *_backup*
 
-# OAuth token files — never commit
-tokens/
+# OAuth token files: never commit. Only the empty tokens/.gitkeep is tracked.
+tokens/*
+!tokens/.gitkeep
 
 # --- Token / secret files ---
 *.token

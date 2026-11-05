@@ -225,11 +225,28 @@ cd frontend && npm ci && npm test          # frontend
 
 The backend tests set their own test encryption key and read only the `*.example.json` config files. They need no database, no Redis and no API keys.
 
-## Work in progress
+## Roadmap
 
-CS Agent is under active development. Expect rough edges, and check the commit history for recent changes.
+CS Agent is a work in progress. No dates, on purpose.
 
-ROADMAP_PLACEHOLDER
+### Now: a self-hostable work in progress
+
+- Daily digest and chat across Gmail, Calendar, Drive, HubSpot, Gainsight, Slack and Zoom.
+- Runs on your own infrastructure under your own Clerk, Google and Anthropic accounts.
+
+### Next: an MCP plug-in
+
+- Connect CS Agent to the tools you already use through MCP, instead of waiting for a custom connector for each one.
+
+### Later
+
+- Microsoft 365: Outlook mail and calendar.
+- Easier deploys, such as a one-click Render setup or Docker.
+- A full accessibility audit of the signed-in app.
+
+### Have a request?
+
+Open a GitHub issue. Connectors beyond MCP get built when a team needs one.
 
 ## License
 
