@@ -1,0 +1,57 @@
+# --- OS junk ---
+.DS_Store
+
+# --- Environment & secrets ---
+.env
+.env.*
+.env.save
+gmail_credentials.json
+gmail_token.json
+
+# --- Virtual environment ---
+.venv/
+
+# --- Local data / generated files ---
+calendar.json
+engagement.json
+events.log
+store.json
+usage.csv
+
+# --- Backups ---
+*_backup*
+
+# OAuth token files — never commit
+tokens/
+
+# --- Token / secret files ---
+*.token
+*.secret
+
+# --- Python cache ---
+__pycache__/
+*.pyc
+interaction_log.jsonl
+
+# --- React build output ---
+frontend/dist/
+frontend/node_modules/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# --- Claude Code local config (per-user) ---
+.claude/
+
+# --- Claude Code local config (per-user) ---
+.claude/
+
+# --- Runtime data artifacts (dedup files, alerts, etc.) ---
+product/data/
+
+# --- Session docs (operational diary — contains user IDs and remediation notes) ---
+docs/sessions/
+docs/handoffs/
+
+# --- Local notes ---
+notes/

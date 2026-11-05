@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation · CS Agent by {{COMPANY_NAME}}</title>
+<meta name="description" content="Integration guides for CS Agent. Connect Google Workspace, HubSpot, Gainsight, Slack, and Zoom to your CS Agent workspace.">
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/dm-sans-600.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/dm-sans-700.woff2') format('woff2');
+  }
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    line-height: 1.6;
+    margin: 0;
+    padding: 56px 24px 80px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  header { margin-bottom: 8px; }
+  .eyebrow { font-size: 13px; font-weight: 500; color: #6b7280; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 12px; }
+  h1 { font-size: 34px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.025em; color: #0a0a0a; }
+  .tagline { font-size: 18px; color: #374151; margin: 0; }
+  hr.divider { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+  .toc { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px 28px; margin: 0 0 48px; }
+  .toc p { font-size: 13px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 12px; }
+  .toc ul { margin: 0; padding-left: 0; list-style: none; }
+  .toc li { margin-bottom: 6px; }
+  .toc a { font-size: 15px; color: #2563eb; }
+  h2 { font-size: 24px; font-weight: 700; margin: 56px 0 6px; letter-spacing: -0.02em; color: #0a0a0a; padding-top: 8px; }
+  .section-intro { font-size: 16px; color: #6b7280; margin: 0 0 28px; }
+  h3 { font-size: 17px; font-weight: 600; margin: 28px 0 10px; color: #0a0a0a; }
+  p { font-size: 16px; color: #374151; margin: 0 0 14px; }
+  ol, ul { padding-left: 22px; margin: 0 0 16px; }
+  li { font-size: 16px; color: #374151; margin-bottom: 8px; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { font-weight: 600; color: #0a0a0a; }
+  .callout {
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 18px 0 22px;
+  }
+  .callout p { font-size: 15px; color: #1e40af; margin: 0; }
+  .callout strong { color: #1e40af; }
+  .privacy-note {
+    background: #f0fdf4;
+    border-left: 3px solid #16a34a;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 18px 0 22px;
+  }
+  .privacy-note p { font-size: 15px; color: #15803d; margin: 0; }
+  .footer { color: #6b7280; font-size: 14px; text-align: center; margin-top: 64px; padding-top: 28px; border-top: 1px solid #e5e7eb; }
+  .footer a { color: #6b7280; }
+  .footer a + a::before { content: " · "; margin: 0 6px; color: #d1d5db; }
+  @media (max-width: 600px) {
+    body { padding: 32px 18px 56px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; margin-top: 40px; }
+    h3 { font-size: 16px; }
+    .toc { padding: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <p class="eyebrow">CS Agent by {{COMPANY_NAME}}</p>
+  <h1>Documentation</h1>
+  <p class="tagline">Integration guides for your CS Agent workspace.</p>
+</header>
+
+<hr class="divider">
+
+<div class="toc">
+  <p>On this page</p>
+  <ul>
+    <li><a href="#getting-started">Getting started</a></li>
+    <li><a href="#google">Google Workspace</a></li>
+    <li><a href="#crm">CRM - HubSpot and Gainsight</a></li>
+    <li><a href="#slack">Slack</a></li>
+    <li><a href="#zoom">Zoom</a></li>
+    <li><a href="#data-and-privacy">Data and privacy</a></li>
+  </ul>
+</div>
+
+<!-- GETTING STARTED -->
+<h2 id="getting-started">Getting started</h2>
+<p class="section-intro">CS Agent is a workspace you keep open all day - like Gmail. Your 7am digest is waiting when you arrive, and signals surface in the chat interface in real time throughout the day.</p>
+
+<h3>Create your account</h3>
+<ol>
+  <li>Go to <a href="/">cs-agent.app</a> and click <strong>Sign up</strong>.</li>
+  <li>Sign in with your Google account or create an account with your email address.</li>
+  <li>Your 14-day free trial starts immediately. No credit card required.</li>
+</ol>
+
+<h3>Connect your tools during onboarding</h3>
+<p>After signing up, CS Agent walks you through connecting your Google Workspace and CRM. Connecting these during onboarding ensures your first digest is ready the next morning at 7am.</p>
+<p>You can also connect or reconnect integrations at any time from <strong>Settings</strong>.</p>
+
+<!-- GOOGLE -->
+<h2 id="google">Google Workspace</h2>
+<p class="section-intro">CS Agent uses Gmail, Google Calendar, and Google Drive (for Meet transcripts) to build your daily digest and surface proactive signals.</p>
+
+<h3>Connect Google Workspace</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> in CS Agent.</li>
+  <li>Under <strong>Connections</strong>, find the Google Workspace section.</li>
+  <li>Click <strong>Connect Google</strong> and complete Google's OAuth consent screen.</li>
+  <li>CS Agent requests read access to Gmail metadata, Google Calendar, and Google Drive Meet artifacts, plus permission to send email on your behalf when you approve a draft. No email bodies are accessed.</li>
+</ol>
+
+<div class="callout">
+  <p><strong>What CS Agent reads from Gmail:</strong> Subject lines, sender and recipient addresses, and timestamps only. CS Agent never receives or stores email bodies. This restriction is enforced at the API level using Gmail's metadata-only format.</p>
+</div>
+
+<h3>Reconnect Google Workspace</h3>
+<p>If your Google connection expires or is revoked, CS Agent will show a Reconnect option in Settings. Click it and complete the OAuth flow to restore access.</p>
+
+<h3>Disconnect Google Workspace</h3>
+<p>You can revoke CS Agent's access to your Google account at any time at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>. This removes the access token immediately. Previously derived signals stored in CS Agent are subject to the retention rules in the <a href="/privacy">Privacy Policy</a>.</p>
+
+<!-- CRM -->
+<h2 id="crm">CRM - HubSpot and Gainsight</h2>
+<p class="section-intro">CS Agent supports HubSpot and Gainsight as CRM and CSP sources. Connect one or both to surface account context alongside your Google signals.</p>
+
+<h3>Connect HubSpot</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the HubSpot row under <strong>Connections</strong>.</li>
+  <li>Click <strong>Connect HubSpot</strong> and complete HubSpot's OAuth consent screen.</li>
+  <li>CS Agent reads account records, contact details, deal stages, and open tasks from HubSpot. No data is written to HubSpot without your explicit approval of a draft action.</li>
+</ol>
+
+<h3>Connect Gainsight</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the Gainsight row under <strong>Connections</strong>.</li>
+  <li>Click <strong>Connect Gainsight</strong> and follow the Gainsight OAuth flow.</li>
+  <li>CS Agent reads account health scores, CTAs, and timeline entries. No writes happen without your approval.</li>
+</ol>
+
+<h3>Disconnect a CRM</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the CRM row you want to disconnect.</li>
+  <li>Click <strong>Disconnect</strong> next to that CRM.</li>
+  <li>CS Agent removes the access token and clears the cached account snapshot for that CRM. If you have a second CRM connected, its snapshot is not affected.</li>
+  <li>You can reconnect at any time using <strong>Connect a CRM</strong> in Settings.</li>
+</ol>
+
+<!-- SLACK -->
+<h2 id="slack">Slack</h2>
+<p class="section-intro">The Slack integration lets CS Agent draft Slack messages for your approval and surface unresponded Slack threads mentioning your accounts.</p>
+
+<h3>What CS Agent does with Slack</h3>
+<ul>
+  <li><strong>Outbound drafts:</strong> Ask CS Agent to draft a Slack message to a teammate or channel. CS Agent shows you the draft first. You review, edit if needed, and approve. Nothing is sent until you approve.</li>
+  <li><strong>Inbound signals:</strong> CS Agent monitors for Slack threads mentioning your customer accounts that haven't received a response. These surface as signals in your digest and chat interface.</li>
+</ul>
+
+<div class="privacy-note">
+  <p><strong>Privacy:</strong> CS Agent reads only thread metadata and message content needed to identify unresponded mentions of your accounts. Raw message content is processed in memory and not stored in CS Agent's database.</p>
+</div>
+
+<h3>Connect Slack</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the Slack row under <strong>Connections</strong>.</li>
+  <li>Click <strong>Connect Slack</strong> and complete Slack's OAuth consent screen.</li>
+  <li>CS Agent requests a user token to search messages and send messages on your behalf when you approve a draft.</li>
+</ol>
+
+<h3>Use Slack in CS Agent</h3>
+<p>To draft a Slack message, open CS Agent's chat and ask - for example: <em>"Draft a Slack to Marcus in the Meridian channel letting him know the QBR is confirmed for Thursday."</em> CS Agent produces a draft with the intended recipient and message text. Click <strong>Edit</strong> to revise or <strong>Approve</strong> to send.</p>
+<p>Unresponded Slack threads mentioning your accounts appear as signals in your daily digest and can surface in chat when relevant.</p>
+
+<h3>Disconnect Slack</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the Slack row.</li>
+  <li>Click <strong>Disconnect</strong>.</li>
+  <li>CS Agent removes the Slack access token immediately. CS Agent will no longer send Slack messages or monitor Slack signals for your account.</li>
+  <li>To fully revoke access, you can also remove the CS Agent app from your Slack workspace at <strong>Slack > Settings > Integrations > Installed apps</strong>.</li>
+</ol>
+
+<!-- ZOOM -->
+<h2 id="zoom">Zoom</h2>
+<p class="section-intro">The Zoom integration gives CS Agent access to transcripts from your customer calls, enabling post-call recaps and unrecapped-call alerts for meetings recorded in Zoom.</p>
+
+<h3>What CS Agent does with Zoom</h3>
+<ul>
+  <li><strong>Post-call recaps:</strong> After a recorded Zoom call with a customer, CS Agent retrieves the transcript, generates a recap, and drafts a CRM timeline entry for your review. Nothing is logged until you approve the draft.</li>
+  <li><strong>Unrecapped-call alerts:</strong> If CS Agent detects a customer call that has a recording but no recap, it surfaces this in your digest so nothing slips through.</li>
+  <li><strong>Pre-call context:</strong> When you have an upcoming Zoom call with a customer, CS Agent can surface account context and prior call notes to prepare you.</li>
+</ul>
+
+<div class="privacy-note">
+  <p><strong>Privacy:</strong> Zoom transcript content is processed in memory at the moment of use and is never persisted to CS Agent's database. Only the AI-generated recap and draft timeline entry are stored - not the source transcript. See the <a href="/privacy" style="color: #15803d;">Privacy Policy</a> for full details.</p>
+</div>
+
+<div class="callout">
+  <p><strong>Requirement:</strong> Zoom AI Companion (Smart Recording or Meeting Summary) must be enabled on your Zoom account for transcript retrieval to work. This is an account-level setting managed by your Zoom admin. If transcripts aren't available, CS Agent will note this and still surface the unrecapped-call signal.</p>
+</div>
+
+<h3>Connect Zoom</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the Zoom row under <strong>Connections</strong>.</li>
+  <li>Click <strong>Connect Zoom</strong> and sign in to your Zoom account on Zoom's OAuth consent screen.</li>
+  <li>Approve the requested permissions: CS Agent needs access to read your cloud recordings and retrieve meeting transcripts.</li>
+  <li>Once connected, CS Agent will begin surfacing post-call signals and alerts for recorded customer meetings.</li>
+</ol>
+
+<h3>Use Zoom in CS Agent</h3>
+<p>No manual action is needed after connecting. CS Agent monitors for new recordings in the background. When a recorded call with a customer account is detected:</p>
+<ol>
+  <li>CS Agent retrieves the Zoom transcript.</li>
+  <li>A post-call recap and draft CRM timeline entry appear in your CS Agent workspace.</li>
+  <li>Review the draft. Click <strong>Edit</strong> to revise or <strong>Approve</strong> to log it to your CRM.</li>
+</ol>
+<p>You can also ask CS Agent about a recent call in the chat interface - for example: <em>"What did we commit to in yesterday's Northgate call?"</em></p>
+<p><strong>Note:</strong> Account matching uses the Zoom meeting topic. Calls with generic titles like "Weekly sync" may not be automatically matched to an account. If a call isn't matched, it will still surface as an unrecapped-call alert so you can handle it manually.</p>
+
+<h3>Disconnect Zoom</h3>
+<ol>
+  <li>Go to <strong>Settings</strong> and find the Zoom row.</li>
+  <li>Click <strong>Disconnect</strong>.</li>
+  <li>CS Agent removes the Zoom access token immediately. CS Agent will no longer retrieve Zoom transcripts or surface Zoom-based signals for your account.</li>
+  <li>To fully revoke access, you can also remove the CS Agent app from your Zoom account at <a href="https://marketplace.zoom.us/user/installed">marketplace.zoom.us/user/installed</a>.</li>
+</ol>
+
+<h3>Zoom data and privacy</h3>
+<p>CS Agent's Zoom integration handles transcript data with the following protections:</p>
+<ul>
+  <li>Transcripts are retrieved over an encrypted HTTPS connection using your personal Zoom OAuth token.</li>
+  <li>Transcript content is processed in memory during recap generation and is not written to CS Agent's database.</li>
+  <li>Only the AI-generated recap and timeline entry draft are stored, not the source transcript text.</li>
+  <li>Your Zoom OAuth token is encrypted at rest using AES-128-CBC + HMAC-SHA256 (Fernet) and is stored only in CS Agent's database, never on disk.</li>
+  <li>Transcript content may be included in a prompt sent to Anthropic's Claude API to generate the recap. Under CS Agent's contract with Anthropic, Anthropic does not use your data to train their models.</li>
+</ul>
+
+<!-- DATA AND PRIVACY -->
+<h2 id="data-and-privacy">Data and privacy</h2>
+<p class="section-intro">CS Agent is built around data minimization. We access only what is needed, process sensitive content in memory without persisting it, and give you full control over your data.</p>
+
+<h3>Delete your data</h3>
+<p>You can delete all your CS Agent data immediately from <strong>Settings > Data and privacy > Delete my data</strong>. This permanently removes your account and all associated data across all integrations. This action cannot be undone.</p>
+
+<h3>Cancel your subscription</h3>
+<p>Canceling your CS Agent subscription triggers a complete data purge within 30 days, per our <a href="/privacy">Privacy Policy</a>.</p>
+
+<h3>Questions</h3>
+<p>For any data or privacy question, contact us at <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> or see the full <a href="/privacy">Privacy Policy</a>.</p>
+
+<div class="footer">
+  <a href="/">cs-agent.app</a><a href="/support">Support</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a>
+</div>
+
+</div>
+</body>
+</html>

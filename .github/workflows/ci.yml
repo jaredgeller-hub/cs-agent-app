@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backend:
+    name: Backend (Python 3.11.11)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11.11'   # match runtime.txt
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Verify Python imports (smoke test)
+        run: |
+          python3 -c "
+          from product.signals.gmail import extract_gmail_signals
+          from product.signals.calendar import extract_calendar_signals
+          from product.signals.drive import find_meet_transcripts
+          from product.signals.detector import detect_and_classify
+          from product.connectors.gainsight import GainsightCRMConnector
+          from product.connectors.hubspot_crm import HubSpotCRMConnector
+          from product.connectors.google_docs_writer import create_document
+          from product.context_cache import refresh_user_context
+          from product.digest.builder import build_morning_digest
+          print('All imports OK')
+          "
+
+      - name: Run pytest
+        run: python3 -m pytest tests/ -v --timeout=30 --tb=short
+
+  frontend:
+    name: Frontend (Node 22)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Verify SRI attributes present
+        run: |
+          grep -q 'integrity="sha384-' frontend/dist/index.html || { echo "ERROR: SRI integrity attributes missing from built index.html"; exit 1; }
+
+      - name: Run vitest
+        working-directory: frontend
+        run: npm test

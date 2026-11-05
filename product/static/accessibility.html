@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Accessibility - CS Agent</title>
+<meta name="description" content="Accessibility statement for CS Agent and {{COMPANY_DOMAIN}}, operated by {{COMPANY_LEGAL_NAME}}">
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/dm-sans-600.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/dm-sans-700.woff2') format('woff2');
+  }
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    line-height: 1.6;
+    margin: 0;
+    padding: 56px 24px 80px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  header { margin-bottom: 8px; }
+  .eyebrow { font-size: 13px; font-weight: 500; color: #6b7280; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 12px; }
+  h1 { font-size: 34px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.025em; color: #0a0a0a; }
+  .meta { color: #6b7280; font-size: 14px; margin: 0; }
+  .meta + .meta { margin-top: 4px; }
+  hr.divider { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+  h2 { font-size: 22px; font-weight: 600; margin: 44px 0 14px; letter-spacing: -0.015em; color: #0a0a0a; }
+  h3 { font-size: 17px; font-weight: 600; margin: 26px 0 10px; color: #0a0a0a; }
+  p { font-size: 16px; color: #374151; margin: 0 0 14px; }
+  ul { padding-left: 22px; margin: 0 0 16px; }
+  li { font-size: 16px; color: #374151; margin-bottom: 10px; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  p a, li a, td a { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 18px 0 26px; font-size: 14px; }
+  th, td { border: 1px solid #e5e7eb; padding: 12px 14px; text-align: left; vertical-align: top; }
+  th { background: #f9fafb; font-weight: 600; color: #0a0a0a; }
+  td { color: #374151; }
+  strong { font-weight: 600; color: #0a0a0a; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; background: #f3f4f6; padding: 2px 6px; border-radius: 4px; color: #1f2937; }
+  .footer { color: #6b7280; font-size: 14px; text-align: center; margin-top: 64px; padding-top: 28px; border-top: 1px solid #e5e7eb; }
+  .footer a { color: #6b7280; }
+  .footer a + a::before { content: " · "; margin: 0 6px; color: #d1d5db; }
+  .skip-link { position: absolute; top: 12px; left: 12px; z-index: 10; transform: translateY(-200%); background: #0a0a0a; color: #ffffff; font-size: 14px; font-weight: 600; padding: 8px 14px; border-radius: 6px; text-decoration: none; }
+  .skip-link:focus { transform: none; outline: 2px solid #2563eb; outline-offset: 2px; }
+  @media (max-width: 600px) {
+    body { padding: 32px 18px 56px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; margin-top: 36px; }
+    h3 { font-size: 16px; }
+    table { font-size: 13px; }
+    th, td { padding: 10px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="container">
+
+<main id="main">
+
+<header>
+  <p class="eyebrow">CS Agent by {{COMPANY_NAME}}</p>
+  <h1>Accessibility</h1>
+  <p class="meta"><strong>Last updated:</strong> October 14, 2026</p>
+</header>
+
+<hr class="divider">
+
+<h2>Our commitment</h2>
+<p>{{COMPANY_NAME}} wants CS Agent and {{COMPANY_DOMAIN}} to be usable by everyone, including people who use screen readers, keyboard navigation, screen magnification, or other assistive technology.</p>
+
+<h2>The standard we aim for</h2>
+<p>We aim to meet the Web Content Accessibility Guidelines (WCAG) 2.1 at Level AA. We treat accessibility problems as bugs and fix them as they are found.</p>
+
+<h2>How we test</h2>
+<p>We test with automated accessibility scanning (axe-core) at both desktop and mobile screen sizes, and with manual keyboard and screen reader checks. Our most recent testing on October 14, 2026 covered:</p>
+<ul>
+  <li>The cs-agent.app home page</li>
+  <li>The cs-agent.app privacy policy and terms of service</li>
+  <li>The cs-agent.app sign-in page</li>
+  <li>The {{COMPANY_DOMAIN}} home page</li>
+</ul>
+<p>Those pages passed with no WCAG 2.1 Level AA issues found by automated testing.</p>
+
+<h2>Known limitations</h2>
+<ul>
+  <li>Sign-in is provided by Clerk, a third-party service. We do not control all of its markup.</li>
+  <li>The waitlist sign-up form is hosted by Google Forms.</li>
+  <li>The signed-in CS Agent application has not yet had a full accessibility audit. That audit is planned before general availability.</li>
+  <li>The demonstration videos on our home page have no audio. The text beside each video describes what it shows. The videos can be paused, and they do not play at all if your device is set to reduce motion.</li>
+</ul>
+
+<h2>Feedback and help</h2>
+<p>If you run into a barrier on any of our pages, or need information in a different format, email us at <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> with "Accessibility" in the subject line. Tell us the page and what happened. We aim to respond within 5 business days.</p>
+
+</main>
+
+<footer class="footer">
+  <a href="/">cs-agent.app</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a>
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,2843 @@
+<!--
+  DEMO RUN ORDER
+  1. Page loads → Scene 1 morning digest fires → type "yes" to QBR offer
+  2. Click ▶ Demo → Scene 2 fires in 3s → "yes, show me" → "yes, send it"
+  3. Click Post-call recap → Scene 3 fires → "yes" → "yes, send it"
+  4. Type "what should I be working on" → Scene 4 → "yes to all" → "yes, send both"
+  5. Wait for Northgate poll (60s) or click ▶ Demo to skip → "yes, send both"
+  6. Wait 45s or click ▶ Demo to skip → Scene 6 EOD fires → "yes, send it"
+
+  SETUP CHECKLIST
+  - Server running: uvicorn main:app --reload --host 0.0.0.0 --port 8000
+  - Browser width: 1440px
+  - Console closed or clear before recording
+  - Hard-refresh (Cmd+Shift+R) to clear any previous session state
+-->
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CS Agent</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design tokens ──────────────────────────────────────────────── */
+    :root {
+      --bg:           #F4F2EF;
+      --surface:      #FFFFFF;
+      --border:       #E2DED8;
+      --text:         #1C1917;
+      --text-muted:   #78716C;
+      --text-light:   #A8A29E;
+      --accent:       #2C5F8A;
+      --accent-warm:  #B85C38;
+      --subtle-bg:    #EDEAE6;
+
+      /* Backward-compat aliases referenced by JS-built content */
+      --surface-alt:   var(--subtle-bg);
+      --text-primary:  var(--text);
+      --text-secondary: var(--text-muted);
+      --accent-dim:    #244E74;
+      --agent-bubble:  var(--surface);
+      --sarah-bubble:  #2C5F8A;
+
+      /* Semantic tag colours */
+      --tag-risk:    #B91C1C;
+      --tag-risk-bg: #FEF2F2;
+      --tag-cta:     #B45309;
+      --tag-cta-bg:  #FFFBEB;
+      --tag-ok:      #15803D;
+      --tag-ok-bg:   #F0FDF4;
+
+      --radius:    10px;
+      --radius-sm: 6px;
+      --font: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-serif: 'DM Serif Display', Georgia, serif;
+    }
+
+    [data-theme="dark"] {
+      --bg:          #111110;
+      --surface:     #1F1D1B;
+      --border:      #2C2825;
+      --text:        #EDE9E4;
+      --text-muted:  #9C9289;
+      --text-light:  #6B6460;
+      --accent:      #7BAFD4;
+      --accent-warm: #D4845A;
+      --subtle-bg:   #1A1815;
+      --accent-dim:  #5A9AB8;
+      --sarah-bubble: #1E3A4F;
+
+      --tag-risk:    #FCA5A5;
+      --tag-risk-bg: rgba(185,28,28,0.2);
+      --tag-cta:     #FCD34D;
+      --tag-cta-bg:  rgba(180,83,9,0.2);
+      --tag-ok:      #86EFAC;
+      --tag-ok-bg:   rgba(21,128,61,0.2);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ── App header ─────────────────────────────────────────────────── */
+    .app-header {
+      height: 56px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      user-select: none;
+    }
+
+    .brand-mark {
+      width: 30px;
+      height: 30px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .brand-name {
+      font-size: 17px;
+      color: var(--text);
+      letter-spacing: -0.2px;
+      line-height: 1;
+      font-family: var(--font);
+      font-weight: 600;
+    }
+
+    .brand-name .serif { font-family: var(--font-serif); font-weight: 400; }
+
+    .header-identity {
+      font-size: 12.5px;
+      color: var(--text-light);
+      margin-left: auto;
+      letter-spacing: 0.1px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .theme-toggle {
+      width: 32px;
+      height: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Workspace ──────────────────────────────────────────────────── */
+    .workspace {
+      display: flex;
+      height: calc(100vh - 56px);
+      overflow: hidden;
+    }
+
+    /* ── Timeline sidebar ───────────────────────────────────────────── */
+    .timeline-sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .timeline-header {
+      padding: 16px 20px 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--text-light);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .timeline-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0 4px;
+    }
+
+    .timeline-list::-webkit-scrollbar { width: 3px; }
+    .timeline-list::-webkit-scrollbar-track { background: transparent; }
+    .timeline-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      padding: 6px 20px 6px 16px;
+      cursor: pointer;
+      transition: background 0.12s;
+      animation: slideInLeft 0.22s ease-out;
+    }
+    .timeline-item:hover { background: var(--subtle-bg); }
+
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-10px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .timeline-track {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 16px;
+      flex-shrink: 0;
+      margin-right: 12px;
+      padding-top: 4px;
+    }
+
+    .timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .timeline-connector {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      margin-top: 4px;
+    }
+    .timeline-item:last-child .timeline-connector { display: none; }
+
+    .timeline-item.active .timeline-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+    .timeline-item.past .timeline-dot {
+      border-color: var(--text-light);
+      background: var(--text-light);
+    }
+
+    .timeline-content { flex: 1; min-width: 0; }
+
+    .timeline-time {
+      font-size: 10px;
+      color: var(--text-light);
+      margin-bottom: 1px;
+    }
+    .timeline-label {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      font-weight: 400;
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .timeline-item.active .timeline-label {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .timeline-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .reset-btn {
+      width: 100%;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: var(--font);
+      padding: 7px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+      text-align: center;
+    }
+    .reset-btn:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Content panel ──────────────────────────────────────────────── */
+    .content-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      background: var(--bg);
+    }
+
+    /* ── Actions bar ────────────────────────────────────────────────── */
+    .content-actions {
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 12px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .actions-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22C55E;
+      flex-shrink: 0;
+    }
+
+    .actions-right {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .hdr-btn {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: var(--font);
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      line-height: 1.6;
+    }
+    .hdr-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .hdr-btn.active { border-color: var(--accent); color: var(--accent); }
+    .hdr-btn:disabled { opacity: 0.45; cursor: default; pointer-events: none; }
+    .hdr-btn.stop-btn { border-color: var(--tag-risk); color: var(--tag-risk); }
+    .hdr-btn.stop-btn:hover { border-color: var(--tag-risk); color: var(--tag-risk); background: var(--tag-risk-bg); }
+    .hdr-btn.present-btn {
+      background: rgba(32,178,170,0.08);
+      border-color: #20b2aa;
+      color: #20b2aa;
+    }
+    .hdr-btn.present-btn:hover { background: rgba(32,178,170,0.16); }
+
+    /* ── Messages ───────────────────────────────────────────────────── */
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* ── Date divider ───────────────────────────────────────────────── */
+    .date-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-light);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.4px;
+      margin: 6px 0;
+    }
+    .date-divider::before, .date-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Agent message (card layout) ────────────────────────────────── */
+    .msg-agent {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      max-width: 74%;
+    }
+
+    .msg-sender-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding-left: 2px;
+    }
+
+    .msg-time {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-light);
+    }
+
+    /* ── Proactive badges ───────────────────────────────────────────── */
+    .badge-fyi {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #1D4ED8;
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      padding: 1px 7px 1px 5px;
+    }
+    [data-theme="dark"] .badge-fyi {
+      color: #93C5FD;
+      background: rgba(29,78,216,0.15);
+      border-color: rgba(147,197,253,0.2);
+    }
+
+    .badge-headsup {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #92400E;
+      background: #FFFBEB;
+      border: 1px solid #FDE68A;
+      border-radius: 10px;
+      padding: 1px 7px 1px 5px;
+    }
+    [data-theme="dark"] .badge-headsup {
+      color: #FCD34D;
+      background: rgba(146,64,14,0.2);
+      border-color: rgba(252,211,77,0.2);
+    }
+
+    .pulse-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse-dot 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.75); }
+    }
+
+    /* ── Bubble ─────────────────────────────────────────────────────── */
+    .bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm) var(--radius) var(--radius) var(--radius);
+      padding: 14px 16px;
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* ── Scene action buttons ───────────────────────────────────────── */
+    .scene-actions {
+      display: flex;
+      gap: 8px;
+      padding: 6px 0 2px 4px;
+    }
+    .scene-btn {
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+    }
+    .scene-btn-primary {
+      background: #1a1a1a;
+      color: #fff;
+      border: 1px solid #1a1a1a;
+    }
+    .scene-btn-primary:hover { background: #333; border-color: #333; }
+    .scene-btn-secondary {
+      background: transparent;
+      color: #1a1a1a;
+      border: 1px solid #C8C4BC;
+    }
+    .scene-btn-secondary:hover { background: #F0EEE9; }
+
+    /* ── Sarah message ──────────────────────────────────────────────── */
+    .msg-sarah {
+      align-self: flex-end;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      max-width: 55%;
+    }
+
+    .msg-sarah .msg-sender-label { justify-content: flex-end; }
+
+    .msg-sarah .bubble {
+      background: var(--sarah-bubble);
+      border-color: transparent;
+      border-left-color: transparent;
+      border-radius: var(--radius) var(--radius-sm) var(--radius) var(--radius);
+      color: #fff;
+    }
+
+    /* ── Digest content ─────────────────────────────────────────────── */
+    .digest-greeting {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+
+    .digest-date {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .digest-section { margin-bottom: 14px; }
+    .digest-section:last-child { margin-bottom: 0; }
+
+    .section-heading {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      margin-bottom: 8px;
+    }
+
+    .account-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .account-row:last-child { border-bottom: none; }
+
+    .account-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+    }
+    .account-reason {
+      font-size: 12px;
+      color: var(--text-muted);
+      flex: 2;
+    }
+
+    .tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .tag-risk { background: var(--tag-risk-bg); color: var(--tag-risk); }
+    .tag-cta  { background: var(--tag-cta-bg);  color: var(--tag-cta);  }
+    .tag-ok   { background: var(--tag-ok-bg);   color: var(--tag-ok);   }
+
+    .cta-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .cta-item:last-child { border-bottom: none; }
+
+    .cta-check {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      border: 1.5px solid var(--border);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .cta-text { flex: 1; }
+    .cta-title { font-size: 14px; font-weight: 500; color: var(--text); }
+    .cta-account { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+    .cta-due { font-size: 11px; color: var(--tag-cta); white-space: nowrap; }
+    .cta-overdue { font-size: 11px; color: var(--tag-risk); white-space: nowrap; }
+
+    .meeting-item {
+      display: flex;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .meeting-item:last-child { border-bottom: none; }
+
+    .meeting-time {
+      font-size: 11px;
+      color: var(--text-muted);
+      width: 52px;
+      flex-shrink: 0;
+      padding-top: 1px;
+    }
+    .meeting-title { font-size: 13px; color: var(--text); }
+    .meeting-sub { font-size: 11px; color: var(--text-light); margin-top: 1px; }
+
+    .inline-code {
+      background: rgba(44,95,138,0.1);
+      color: var(--accent);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+      font-size: 12px;
+    }
+
+    p + p { margin-top: 8px; }
+
+    /* ── Document card ──────────────────────────────────────────────── */
+    .doc-card {
+      background: var(--subtle-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin: 10px 0 4px;
+    }
+    .doc-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+    .doc-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .doc-row {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .doc-row:last-child { border-bottom: none; }
+    .doc-num {
+      color: var(--accent);
+      font-weight: 600;
+      width: 14px;
+      flex-shrink: 0;
+    }
+
+    /* ── Email preview ──────────────────────────────────────────────── */
+    .email-preview {
+      background: var(--subtle-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-dim);
+      border-radius: var(--radius-sm);
+      margin: 10px 0 4px;
+      overflow: hidden;
+    }
+    .email-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      padding: 8px 14px 7px;
+      border-bottom: 1px solid var(--border);
+    }
+    .email-field-row {
+      display: flex;
+      gap: 10px;
+      padding: 5px 14px;
+      border-bottom: 1px solid var(--border);
+      align-items: baseline;
+    }
+    .email-field {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-light);
+      flex-shrink: 0;
+      width: 52px;
+    }
+    .email-val {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .email-body {
+      padding: 10px 14px 12px;
+      font-size: 11.5px;
+      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+      color: var(--text-muted);
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    /* ── Gainsight CTA card ─────────────────────────────────────────── */
+    .cta-card {
+      background: var(--subtle-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--tag-cta);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin: 10px 0 4px;
+    }
+    .cta-card-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--tag-cta);
+      margin-bottom: 8px;
+    }
+    .cta-card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.4;
+      margin-bottom: 3px;
+    }
+    .cta-card-account {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 9px;
+    }
+    .cta-card-meta {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .cta-card-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--tag-cta-bg);
+      color: var(--tag-cta);
+    }
+    .cta-card-tag-high {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--tag-risk-bg);
+      color: var(--tag-risk);
+    }
+
+    /* ── Draft block ────────────────────────────────────────────────── */
+    .draft-block {
+      background: var(--subtle-bg);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent-warm);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      margin: 8px 0 4px;
+    }
+    .draft-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-warm);
+      margin-bottom: 6px;
+    }
+    .draft-body {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      font-style: italic;
+    }
+
+    /* ── Input area ─────────────────────────────────────────────────── */
+    .input-area {
+      border-top: 1px solid var(--border);
+      padding: 16px 40px 20px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    .input-box {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      gap: 10px;
+      transition: border-color 0.15s;
+    }
+    .input-box:focus-within { border-color: var(--accent); }
+
+    .input-field {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+    }
+    .input-field::placeholder { color: var(--text-light); }
+
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--accent-dim); }
+    .send-btn svg { display: block; }
+
+    .input-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 0 2px;
+    }
+
+    .chip {
+      background: var(--subtle-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 3px 10px;
+      font-size: 11px;
+      font-family: var(--font);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .chip:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Integrations panel ─────────────────────────────────────────── */
+    .intg-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+    }
+    .intg-backdrop.open { display: block; background: rgba(0,0,0,0.25); }
+
+    .intg-panel {
+      position: fixed;
+      top: 0;
+      right: -380px;
+      width: 360px;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 101;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      transition: right 0.22s cubic-bezier(.4,0,.2,1);
+    }
+    .intg-panel.open { right: 0; }
+
+    .intg-panel::-webkit-scrollbar { width: 4px; }
+    .intg-panel::-webkit-scrollbar-track { background: transparent; }
+    .intg-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .intg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .intg-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .intg-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 20px;
+      line-height: 1;
+      padding: 0 4px;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .intg-close:hover { color: var(--text); }
+
+    .intg-explainer {
+      padding: 14px 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .intg-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-light);
+      padding: 16px 20px 6px;
+    }
+
+    .intg-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 20px;
+      transition: background 0.12s;
+    }
+    .intg-item:hover { background: var(--subtle-bg); }
+
+    .intg-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .intg-info { flex: 1; min-width: 0; }
+    .intg-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .intg-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+    .intg-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--tag-ok);
+      flex-shrink: 0;
+    }
+
+    .intg-connect-btn {
+      position: relative;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-family: var(--font);
+      padding: 3px 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .intg-connect-btn:hover { border-color: var(--accent-dim); color: var(--text); }
+    .intg-connect-btn .intg-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 6px);
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 9px;
+      font-size: 10px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .intg-connect-btn:hover .intg-tooltip { display: block; }
+
+    .intg-coming-tag {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-light);
+      flex-shrink: 0;
+    }
+
+    .intg-item.dimmed .intg-name { color: var(--text-muted); opacity: 0.6; }
+    .intg-item.dimmed .intg-logo { opacity: 0.35; }
+    .intg-item.dimmed .intg-desc { opacity: 0.5; }
+
+    /* ── Presentation mode ──────────────────────────────────────────── */
+    body.present-mode .timeline-sidebar { display: none; }
+    body.present-mode .app-header { display: none; }
+    body.present-mode .workspace { height: 100vh; }
+    body.present-mode .content-actions { display: none; }
+    body.present-mode .input-area { display: none; }
+
+    .present-exit-btn {
+      display: none;
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      z-index: 200;
+      background: rgba(28,25,23,0.9);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      color: rgba(255,255,255,0.75);
+      font-size: 12px;
+      font-family: var(--font);
+      padding: 6px 12px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      align-items: center;
+      gap: 6px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .present-exit-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+    body.present-mode .present-exit-btn { display: flex; }
+  </style>
+</head>
+<body>
+
+<!-- ── App header ──────────────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="header-brand">
+    <div class="brand-mark">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <circle cx="8" cy="5.5" r="3" stroke="white" stroke-width="1.5"/>
+        <path d="M2 14c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="brand-name">CS<span class="serif">Agent</span></span>
+  </div>
+  <div class="header-identity">Sarah C. &nbsp;&middot;&nbsp; Senior CSM &nbsp;&middot;&nbsp; Clarify</div>
+  <div class="header-actions">
+    <button class="theme-toggle" id="btn-theme" title="Toggle dark mode">&#9790;</button>
+  </div>
+</header>
+
+<!-- ── Workspace ────────────────────────────────────────────────────── -->
+<div class="workspace">
+
+  <!-- Timeline sidebar -->
+  <aside class="timeline-sidebar">
+    <div class="timeline-header">Today&rsquo;s session</div>
+    <div class="timeline-list" id="timeline-list"></div>
+    <div class="timeline-footer">
+      <button class="reset-btn" id="btn-reset">&#x21BA; Reset Demo</button>
+    </div>
+  </aside>
+
+  <!-- Content panel -->
+  <div class="content-panel">
+
+    <!-- Actions bar -->
+    <div class="content-actions">
+      <div class="actions-left">
+        <div class="status-dot"></div>
+        CS Agent &mdash; your portfolio assistant
+      </div>
+      <div class="actions-right">
+        <button class="hdr-btn" id="btn-intg">Integrations</button>
+        <button class="hdr-btn" id="btn-demo">&#9654; Demo</button>
+        <button class="hdr-btn" id="btn-autoplay">&#9654;&#9654; Auto-play</button>
+        <button class="hdr-btn stop-btn" id="btn-stop" style="display:none">&#9632; Stop</button>
+        <button class="hdr-btn" id="btn-pause" style="display:none">&#9208; Pause</button>
+        <button class="hdr-btn present-btn" id="btn-present">Present</button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages" id="messages"></div>
+
+    <!-- Input -->
+    <div class="input-area">
+      <div class="input-box">
+        <input class="input-field" type="text" placeholder="Ask about your portfolio, accounts, or upcoming meetings&hellip;" />
+        <button class="send-btn" aria-label="Send">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M13 1L1 6.5L6 7.5M13 1L8 13L6 7.5M13 1L6 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /content-panel -->
+</div><!-- /workspace -->
+
+<script>
+  // ── Scene time configuration ──────────────────────────────────────
+  const SCENE_TIMES = {
+    scene1: '8:47 AM',
+    scene2: '9:16 AM',
+    scene3: '10:43 AM',
+    scene4: '11:03 AM',
+    scene5: '1:18 PM',
+    scene6: '4:58 PM',
+  };
+
+  // ── Pure helpers ──────────────────────────────────────────────────
+
+  function esc(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function fmtTime(t) {
+    const time = t.length > 5 ? t.slice(11, 16) : t;
+    const [h, m] = time.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour   = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${suffix}`;
+  }
+
+  function fmtDate(d) {
+    const [y, mo, day] = d.split('-').map(Number);
+    return new Date(y, mo - 1, day).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric'
+    });
+  }
+
+  function fmtDateLong(d) {
+    const [y, mo, day] = d.split('-').map(Number);
+    return new Date(y, mo - 1, day).toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric'
+    });
+  }
+
+  function makeDivider(label) {
+    const d = document.createElement('div');
+    d.className = 'date-divider';
+    d.textContent = label;
+    return d;
+  }
+
+  // Card-layout agent message. variant: undefined | 'fyi' | 'headsup'
+  function makeAgentMsg(time, contentHtml, variant) {
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-agent';
+    let badgeHtml = '';
+    if (variant === 'fyi') {
+      badgeHtml = ' <span class="badge-fyi"><span class="pulse-dot"></span>FYI</span>';
+    } else if (variant === 'headsup') {
+      badgeHtml = ' <span class="badge-headsup"><span class="pulse-dot"></span>Heads up</span>';
+    }
+    wrap.innerHTML =
+      `<div class="msg-sender-label">CS Agent <span class="msg-time">${esc(time)}</span>${badgeHtml}</div>` +
+      `<div class="bubble">${contentHtml}</div>`;
+    return wrap;
+  }
+
+  function buildRecapHtml(s) {
+    const account   = s.account    || 'Meridian Health';
+    const dateStr   = (s.created_at || '').slice(0, 10);
+    const keyPoints = s.key_points  || [];
+    const ctas      = s.ctas        || [];
+    const risks     = s.risks       || [];
+    const summary   = s.summary     || '';
+
+    let html = `<p>Good call. Here&#39;s what I captured.</p>`;
+    html += `<p><strong>${esc(account)} \u2014 Call Recap \u2014 ${esc(dateStr ? fmtDateLong(dateStr) : '')}</strong></p>`;
+    html += `<p>${esc(summary)}</p>`;
+    if (keyPoints.length > 0) {
+      html += `<p><strong>Key points:</strong></p>`;
+      for (const kp of keyPoints) html += `<p>\u2022 ${esc(kp)}</p>`;
+    }
+    if (ctas.length > 0) {
+      html += `<p><strong>Commitments:</strong></p>`;
+      for (const c of ctas) {
+        const due = c.due_date ? ` (by ${esc(c.due_date)})` : '';
+        html += `<p>\u2022 ${esc(c.title || '')}${due}</p>`;
+      }
+    }
+    if (risks.length > 0) {
+      const riskText = risks.map(r => r.signal || r.category || '').filter(Boolean).join('; ');
+      if (riskText) html += `<p>Risk read: ${esc(riskText)}</p>`;
+    }
+    html += `<p>Want me to send the recap to Marcus and log a timeline entry in Gainsight?</p>`;
+    return html;
+  }
+
+  function buildNorthgateHtml() {
+    return `
+      <p>Sarah, I want to come back to Northgate Logistics before your day gets away from you.</p>
+      <p>I\u2019ve been watching this account and a few things are converging that I think warrant your attention today \u2014 not this week.</p>
+      <p>They haven\u2019t logged in for 11 days. Their last three support tickets were submitted by Dana\u2019s manager, not Dana \u2014 which is unusual. Dana has been your primary contact for 18 months and she\u2019s gone quiet. The tickets themselves are minor but the pattern of who is submitting them suggests something may have shifted internally.</p>
+      <p>Their renewal is in 45 days. In my experience with accounts at this signal level, the conversation gets significantly harder if it isn\u2019t initiated before the 30-day mark.</p>
+      <p>I don\u2019t think this is a lost account. I think this is an account that needs to hear from you today \u2014 not with an agenda, just with presence.</p>
+      <p>I\u2019ve drafted a message to Dana and a risk CTA for Gainsight. Want to see them before I send?</p>
+    `;
+  }
+
+  function buildEodHtml(eod) {
+    const closed  = eod.closed_accounts  || [];
+    const watch   = eod.watch_accounts   || [];
+    const tomorrow = eod.tomorrow        || [];
+    const stats   = eod.stats            || {};
+
+    let html = `<p>Sarah, here\u2019s how your day closed out.</p>`;
+    html += `<p>You went into today with 4 customer interactions and a handful of things that needed to get done. Here\u2019s where everything landed.</p>`;
+
+    // Closed accounts — hardcoded one-liners per demo script
+    const closedCopy = {
+      'Meridian Health':   'Strong call. Marcus is engaged. Product follow-up sent to the team with a committed timeline. Recap logged in Gainsight.',
+      'Beacon Financial':  'Routine check-in. Healthy account. No blockers raised. Timeline entry logged.',
+      'Sutton Retail':     'Productive call. Team is actively using the platform. No open risks. Timeline entry logged.',
+    };
+    for (const acct of closed) {
+      const line = closedCopy[acct] || 'Call completed. Timeline entry logged.';
+      html += `<p><strong>${esc(acct)}</strong> \u2014 ${esc(line)}</p>`;
+    }
+
+    // Watch accounts
+    for (const w of watch) {
+      html += `<p><strong>${esc(w.account)}</strong> \u2014 ${esc(w.status)}</p>`;
+    }
+
+    html += `<p>You closed ${esc(String(stats.ctas_closed || 0))} CTAs today, sent ${esc(String(stats.emails_sent || 0))} customer-facing communications, and kept every commitment you made.</p>`;
+
+    // Tomorrow flag — must be last line so pendingScene question closes the message
+    if (tomorrow.length > 0) {
+      const t = tomorrow[0];
+      html += `<p>One thing before you sign off. <strong>${esc(t.account)}</strong> has a call tomorrow${t.flag ? ' \u2014 ' + esc(t.flag) + '.' : '.'} I\u2019ve drafted a note to their support team. Want me to send it tonight so it\u2019s moving by the time you\u2019re at your desk tomorrow?</p>`;
+    } else {
+      html += `<p>Great work today.</p>`;
+    }
+    return html;
+  }
+
+  // Renders an email draft card for use inside a CS Agent bubble.
+  function buildEmailHtml(to, subject, body) {
+    return '<div class="email-preview">' +
+      '<div class="email-label">EMAIL DRAFT</div>' +
+      '<div class="email-field-row"><span class="email-field">To</span><span class="email-val">' + esc(to) + '</span></div>' +
+      '<div class="email-field-row"><span class="email-field">Subject</span><span class="email-val">' + esc(subject) + '</span></div>' +
+      '<div class="email-body">' + esc(body) + '</div>' +
+      '</div>';
+  }
+
+  // Renders a Gainsight-style CTA task card for use inside a CS Agent bubble.
+  function buildCtaHtml(title, account, due, priority) {
+    const isHigh = (priority || '').toLowerCase() === 'high';
+    const priorityTag = priority
+      ? '<span class="' + (isHigh ? 'cta-card-tag-high' : 'cta-card-tag') + '">' + esc(priority) + ' Priority</span>'
+      : '';
+    const dueTag = due
+      ? '<span class="cta-card-tag">Due ' + esc(due) + '</span>'
+      : '';
+    return '<div class="cta-card">' +
+      '<div class="cta-card-label">GAINSIGHT CTA</div>' +
+      '<div class="cta-card-title">' + esc(title) + '</div>' +
+      '<div class="cta-card-account">' + esc(account) + '</div>' +
+      '<div class="cta-card-meta">' + dueTag + priorityTag + '</div>' +
+      '</div>';
+  }
+
+  // ── Reusable action button helper ────────────────────────────────────────
+  // Appends a draft preview bubble + "Edit draft" button to #messages.
+  // The draft content is shown inline. Click "Edit draft" → editable textarea.
+  function appendActionButtons(opts) {
+    const feed          = document.getElementById('messages');
+    const confirmText   = opts.confirmText    || 'Done.';
+    const draftLabel    = opts.draftLabel     || '';
+    const draftText     = opts.draftText      || '';
+    const sendBtnLabel  = opts.sendButtonLabel || 'Send';
+    const timeStr       = opts.time || SCENE_TIMES.scene1;
+
+    function showConfirm() {
+      const confirmEl = makeAgentMsg(timeStr, '<p>' + esc(confirmText) + '</p>');
+      feed.appendChild(confirmEl);
+      feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+    }
+
+    // Build inline draft preview bubble
+    const draftPreviewEl = makeAgentMsg(timeStr, '');
+    const previewBubble  = draftPreviewEl.querySelector('.bubble');
+
+    const labelEl = document.createElement('div');
+    labelEl.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;';
+    labelEl.textContent = draftLabel;
+
+    const bodyEl = document.createElement('div');
+    bodyEl.style.cssText =
+      'font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;' +
+      'background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;';
+    bodyEl.textContent = draftText;
+
+    previewBubble.appendChild(labelEl);
+    previewBubble.appendChild(bodyEl);
+    feed.appendChild(draftPreviewEl);
+
+    // Edit draft button row
+    const editBtn = document.createElement('button');
+    editBtn.className = 'scene-btn scene-btn-secondary';
+    editBtn.textContent = 'Edit draft';
+
+    const actionsRow = document.createElement('div');
+    actionsRow.className = 'scene-actions';
+    actionsRow.appendChild(editBtn);
+
+    editBtn.addEventListener('click', () => {
+      actionsRow.remove();
+      draftPreviewEl.remove();
+
+      const draftEl   = makeAgentMsg(timeStr, '');
+      const bubble    = draftEl.querySelector('.bubble');
+
+      const editLabelEl = document.createElement('div');
+      editLabelEl.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;';
+      editLabelEl.textContent = draftLabel;
+
+      const textarea  = document.createElement('textarea');
+      textarea.value  = draftText;
+      textarea.rows   = 5;
+      textarea.style.cssText =
+        'width:100%;box-sizing:border-box;font-family:inherit;font-size:14px;line-height:1.6;' +
+        'color:var(--text);background:var(--bg);border:1px solid var(--border);' +
+        'border-radius:6px;padding:10px 12px;resize:vertical;outline:none;margin-bottom:10px;';
+
+      const sendBtn   = document.createElement('button');
+      sendBtn.textContent   = sendBtnLabel;
+      sendBtn.style.cssText =
+        'width:100%;padding:10px;background:#1a1a1a;color:#fff;border:none;' +
+        'border-radius:8px;font-family:inherit;font-size:14px;font-weight:500;cursor:pointer;';
+      sendBtn.addEventListener('mouseenter', () => { sendBtn.style.background = '#333'; });
+      sendBtn.addEventListener('mouseleave', () => { sendBtn.style.background = '#1a1a1a'; });
+
+      sendBtn.addEventListener('click', () => {
+        draftEl.remove();
+        showConfirm();
+      });
+
+      bubble.appendChild(editLabelEl);
+      bubble.appendChild(textarea);
+      bubble.appendChild(sendBtn);
+
+      feed.appendChild(draftEl);
+      feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+    });
+
+    feed.appendChild(actionsRow);
+    feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+  }
+
+  function renderDigest(bubble, digest) {
+    const agenda     = digest.agenda         || [];
+    const watchAccts = digest.watch_accounts  || [];
+    const ctas       = digest.ctas            || [];
+
+    const riskRank = { high: 0, watch: 1, ok: 2 };
+    const portfolio = [
+      ...agenda.map(a => ({
+        account: a.account.name, risk_level: a.risk_level,
+        risk_reasons: a.risk_reasons || [], has_meeting: true,
+      })),
+      ...watchAccts.map(w => ({
+        account: w.account, risk_level: w.risk_level,
+        risk_reasons: w.risk_reasons || [], has_meeting: false,
+      })),
+    ].sort((a, b) => {
+      const rd = (riskRank[a.risk_level] ?? 2) - (riskRank[b.risk_level] ?? 2);
+      return rd !== 0 ? rd : (a.has_meeting ? 0 : 1) - (b.has_meeting ? 0 : 1);
+    });
+
+    const totalMeetings = agenda.length;
+    let html = `
+      <div class="digest-greeting">Good morning, Sarah. You have ${totalMeetings} customer interaction${totalMeetings !== 1 ? 's' : ''} today. Here&#39;s what I want you to know before your first call.</div>
+      <div class="digest-date">${fmtDate(digest.date)} &nbsp;·&nbsp; ${portfolio.length} accounts · ${ctas.length} open CTAs · ${totalMeetings} interactions today</div>
+    `;
+
+    html += `<div class="digest-section"><div class="section-heading">Portfolio</div>`;
+    for (const item of portfolio) {
+      const reason = item.risk_reasons.length > 0
+        ? item.risk_reasons[0]
+        : item.has_meeting ? 'Call today. No urgent issues.' : 'No urgent issues.';
+      const tag = item.risk_level === 'high'
+        ? '<span class="tag tag-risk">At risk</span>'
+        : item.risk_level === 'watch'
+          ? '<span class="tag tag-cta">Watch</span>'
+          : '<span class="tag tag-ok">On track</span>';
+      html += `<div class="account-row">
+        <span class="account-name">${esc(item.account)}</span>
+        <span class="account-reason">${esc(reason)}</span>
+        ${tag}
+      </div>`;
+    }
+    html += `</div>`;
+
+    if (ctas.length > 0) {
+      html += `<div class="digest-section"><div class="section-heading">Open CTAs</div>`;
+      for (const cta of ctas) {
+        const badge = cta.status === 'overdue'
+          ? '<span class="cta-overdue">Overdue</span>'
+          : '<span class="cta-due">Due today</span>';
+        html += `<div class="cta-item">
+          <div class="cta-check"></div>
+          <div class="cta-text">
+            <div class="cta-title">${esc(cta.title)}</div>
+            <div class="cta-account">${esc(cta.account)}</div>
+          </div>
+          ${badge}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    if (agenda.length > 0) {
+      html += `<div class="digest-section"><div class="section-heading">Today&#39;s meetings</div>`;
+      for (const item of agenda) {
+        const sub = item.contact
+          ? `<div class="meeting-sub">${esc(item.contact)}${item.contact_title ? ', ' + esc(item.contact_title) : ''}</div>`
+          : '';
+        html += `<div class="meeting-item">
+          <div class="meeting-time">${esc(fmtTime(item.time))}</div>
+          <div>
+            <div class="meeting-title">${esc(item.account.name)}</div>
+            ${sub}
+          </div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    bubble.innerHTML = html;
+  }
+
+  // Returns a natural-language reason line for each account in the portfolio.
+  // Formats an ISO datetime or HH:MM string into a short natural time ("9:30am", "1pm").
+  function fmtTimeShort(isoOrHhmm) {
+    const hhmm   = (isoOrHhmm || '').length > 5 ? isoOrHhmm.slice(11, 16) : isoOrHhmm;
+    const [h, m] = hhmm.split(':').map(Number);
+    const suffix = h >= 12 ? 'pm' : 'am';
+    const hour   = h % 12 || 12;
+    return m === 0 ? `${hour}${suffix}` : `${hour}:${String(m).padStart(2, '0')}${suffix}`;
+  }
+
+  // Renders the morning digest bubble from a GET /assistant/today response.
+  function renderTodayDigest(bubble, data) {
+    const accounts     = data.accounts || data.priority_accounts || [];
+    const ctas         = Array.isArray(data.ctas) ? data.ctas : [];
+    const meetings     = (data.meetings || []).map(m => ({
+      ...m,
+      time: m.time || (m.start ? m.start.slice(11,16) : ''),
+      title: m.title || m.account || '',
+    }));
+    const meetingCount = meetings.length;
+    // Support both response shapes:
+    // New shape: data.overdue_ctas = [{title, account, status, due_date}]
+    // Old shape: data.ctas = {overdue: [...strings], due_today: [...strings]}
+    let activeCtas = [];
+    if (Array.isArray(data.overdue_ctas) && data.overdue_ctas.length > 0) {
+      activeCtas = data.overdue_ctas;
+    } else {
+      const ctasObj = Array.isArray(data.ctas) ? {} : (data.ctas || {});
+      activeCtas = [
+        ...(ctasObj.overdue || []).map(t => ({ title: t, status: 'overdue', account: '' })),
+        ...(ctasObj.due_today || []).map(t => ({ title: t, status: 'due_today', account: '' })),
+      ];
+    }
+    if (Array.isArray(data.due_today_ctas)) {
+      activeCtas = activeCtas.concat(data.due_today_ctas);
+    }
+    const ctaCount = activeCtas.length;
+
+    let html = `
+      <div class="digest-greeting">Good morning Sarah. Here\u2019s where things stand.</div>
+      <div class="digest-date">${accounts.length} accounts &nbsp;&middot;&nbsp; ${ctaCount} open CTA${ctaCount !== 1 ? 's' : ''} &nbsp;&middot;&nbsp; ${meetingCount} meeting${meetingCount !== 1 ? 's' : ''} today</div>
+    `;
+
+    // Portfolio
+    html += `<div class="digest-section"><div class="section-heading">Portfolio</div>`;
+    for (const item of accounts) {
+      const risk = item.risk;
+      const tag = (risk === 'at_risk' || risk === 'low_signal')
+        ? '<span class="tag tag-risk">At risk</span>'
+        : risk === 'watch'
+          ? '<span class="tag tag-cta">Watch</span>'
+          : '<span class="tag tag-ok">On track</span>';
+      const reason = item.reason || (item.drivers && item.drivers[0]) || '';
+      html += `<div class="account-row">
+        <span class="account-name">${esc(item.account)}</span>
+        <span class="account-reason">${esc(reason)}</span>
+        ${tag}
+      </div>`;
+    }
+    html += `</div>`;
+
+    // Open CTAs
+    if (activeCtas.length > 0) {
+      html += `<div class="digest-section"><div class="section-heading">Open CTAs</div>`;
+      for (const cta of activeCtas.slice(0, 5)) {
+        const badge = cta.status === 'overdue'
+          ? '<span class="cta-overdue">Overdue</span>'
+          : '<span class="cta-due">Due today</span>';
+        html += `<div class="cta-item">
+          <div class="cta-check"></div>
+          <div class="cta-text">
+            <div class="cta-title">${esc(cta.title)}</div>
+            <div class="cta-account">${esc(cta.account)}</div>
+          </div>
+          ${badge}
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Meetings
+    if (meetings.length > 0) {
+      html += `<div class="digest-section"><div class="section-heading">Today's meetings</div>`;
+      for (const mtg of meetings) {
+        const rawTime = mtg.time || (mtg.start ? mtg.start.substring(11, 16) : '');
+        const timeStr = rawTime ? fmtTimeShort(rawTime) : '';
+        const contactLine = mtg.contact
+          ? '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + esc(mtg.contact) + (mtg.contact_title ? ' · ' + esc(mtg.contact_title) : '') + '</div>'
+          : null;
+        const attendee = (mtg.attendees && mtg.attendees.length > 0)
+          ? mtg.attendees[0].split(' — ')[0]
+          : '';
+        const attendeeLine = attendee
+          ? '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + esc(attendee) + '</div>'
+          : '';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border:0.5px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:6px;">'
+          + '<div>'
+          + '<div style="font-size:14px;font-weight:500;color:var(--text);">' + esc(mtg.title || mtg.account) + '</div>'
+          + (contactLine || attendeeLine)
+          + '</div>'
+          + '<div style="font-size:13px;color:var(--text-muted);flex-shrink:0;margin-left:12px;">' + esc(timeStr) + '</div>'
+          + '</div>';
+      }
+      html += `</div>`;
+    }
+
+    bubble.innerHTML = html;
+  }
+
+  // ── Demo state & response detection ──────────────────────────────────
+
+  // pendingScene tracks which scripted follow-through is waiting for Sarah's reply.
+  // null = route to /chat as normal.
+  let pendingScene = null;
+
+  function isAffirmative(msg) {
+    const m = msg.toLowerCase().trim();
+    const phrases = [
+      'yes', 'yep', 'yeah', 'sure', 'ok', 'okay', 'go ahead', 'do it',
+      'send it', 'send both', 'send them', 'do both', "let's do it", 'go for it',
+      'show me', 'approve', 'approved', 'confirm', 'confirmed',
+      'please', 'yes please', 'sounds good', 'looks good', 'all good',
+      'great', 'perfect', 'done', 'proceed',
+      'absolutely', 'definitely', 'of course',
+    ];
+    return phrases.some(w => m.includes(w));
+  }
+
+  function isNegative(msg) {
+    const m = msg.toLowerCase().trim();
+    const words = ['no', 'nope', 'nah', 'not now', 'cancel', 'never mind', 'skip', 'hold off'];
+    return words.some(w => m === w || m.startsWith(w + ' ') || m.startsWith(w + '!') || m.startsWith(w + '.'));
+  }
+
+  // ── Timeline ──────────────────────────────────────────────────────────
+
+  let activeTimelineItem = null;
+
+  function addTimelineItem(label, timeStr, targetEl) {
+    const timelineList = document.getElementById('timeline-list');
+    if (!timelineList) return;
+
+    if (activeTimelineItem) {
+      activeTimelineItem.classList.remove('active');
+      activeTimelineItem.classList.add('past');
+    }
+
+    const item = document.createElement('div');
+    item.className = 'timeline-item active';
+    item.innerHTML =
+      `<div class="timeline-track">` +
+        `<div class="timeline-dot"></div>` +
+        `<div class="timeline-connector"></div>` +
+      `</div>` +
+      `<div class="timeline-content">` +
+        `<div class="timeline-time">${esc(timeStr)}</div>` +
+        `<div class="timeline-label">${esc(label)}</div>` +
+      `</div>`;
+
+    if (targetEl) {
+      item.addEventListener('click', () => {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
+    timelineList.appendChild(item);
+    activeTimelineItem = item;
+  }
+
+  // ── Scene triggers ────────────────────────────────────────────────────
+
+  async function triggerNorthgate(messages) {
+    const res = await fetch('/proactive/northgate');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.alert === false) return;
+
+    messages.appendChild(makeDivider(`${SCENE_TIMES.scene5} \u2014 CS Agent`));
+    const typing = makeAgentMsg(SCENE_TIMES.scene5, '<p style="color:var(--text-muted)">CS Agent is thinking\u2026</p>', 'headsup');
+    messages.appendChild(typing);
+    addTimelineItem('Northgate alert', SCENE_TIMES.scene5, typing);
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+
+    await new Promise(r => setTimeout(r, 2000));
+    typing.querySelector('.bubble').innerHTML = buildNorthgateHtml();
+    pendingScene = 'scene5_northgate';
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  }
+
+  async function triggerEod(messages) {
+    messages.appendChild(makeDivider(`${SCENE_TIMES.scene6} \u2014 End of day`));
+
+    const fallbackMsg =
+      '<p>Sarah, here\u2019s how your day closed out.</p>' +
+      '<p><strong>Meridian</strong> \u2014 strong call. Product follow-up sent to Jamie. QBR deck structure built, power user adoption section outlined. Recap sent, timeline entry logged in Gainsight.</p>' +
+      '<p><strong>Northgate</strong> \u2014 outreach sent to Dana at 2:43pm. Risk CTA logged and flagged for your team.</p>' +
+      '<p><strong>Beacon</strong> and <strong>Sutton</strong> \u2014 both calls clean. Recaps sent, everything logged.</p>' +
+      '<p>Tomorrow: <strong>Pinnacle</strong> at 3pm. They have an open support ticket \u2014 dashboard slow, three days unresolved. I\u2019ve drafted a note to your support team. Send it tonight?</p>' +
+      '<p>You closed 4 CTAs today, sent 3 customer-facing communications, and kept every commitment you made. Great work today.</p>';
+
+    let eodHtml = fallbackMsg;
+
+    try {
+      const res = await fetch('/eod/summary');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.message) {
+        const ACCTS = [
+          'Beacon Financial and Sutton Retail',
+          'Beacon and Sutton',
+          'Meridian Health', 'Northgate Logistics',
+          'Meridian', 'Northgate',
+          'Beacon Financial', 'Sutton Retail', 'Pinnacle Group',
+        ];
+        eodHtml = data.message.split(/\n\n+/).map(p => {
+          let line = p.trim();
+          for (const a of ACCTS) {
+            if (line.startsWith(a)) {
+              const bolded = a.split(' and ')
+                .map(n => `<strong>${n.trim()}</strong>`)
+                .join(' and ');
+              line = bolded + line.slice(a.length);
+              break;
+            }
+          }
+          return `<p>${line}</p>`;
+        }).join('');
+      }
+    } catch (e) {
+      // fall through to fallbackMsg
+    }
+
+    const msg = makeAgentMsg(SCENE_TIMES.scene6, eodHtml, 'fyi');
+    messages.appendChild(msg);
+    addTimelineItem('End of day', SCENE_TIMES.scene6, msg);
+    pendingScene = 'scene6_pinnacle';
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  }
+
+  async function triggerScene2(messages) {
+    messages.appendChild(makeDivider(SCENE_TIMES.scene2));
+    const briefEl = makeAgentMsg(SCENE_TIMES.scene2, '<p style="color:var(--text-muted)">CS Agent is thinking\u2026</p>', 'fyi');
+    messages.appendChild(briefEl);
+    addTimelineItem('Pre-call prep \u00b7 Meridian', SCENE_TIMES.scene2, briefEl);
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+
+    // Hardcoded fallback — matches exact demo-script wording
+    const fallbackHtml =
+      '<p>Sarah, your Meridian Health call is in 15 minutes. Here\u2019s what I\u2019d want you walking in with.</p>' +
+      '<p>Marcus opened the last call frustrated about API response times \u2014 their support team is missing a first response time SLA target of under 4 hours. Since then there\u2019s been some improvement but they\u2019re still not hitting the target. He\u2019ll lead with this. Don\u2019t wait for him to raise it \u2014 acknowledge the progress and give him a clear timeline from the product team.</p>' +
+      '<p>You have an open commitment from last call that hasn\u2019t been fulfilled: you said you\u2019d follow up with the product team on a timeline. You haven\u2019t sent it yet. I\u2019d acknowledge that directly. Marcus is data-oriented and will respect transparency over deflection.</p>' +
+      '';
+
+    // Fetch live brief in parallel with the 1.5s typing delay
+    const fetchData = fetch('/prep/meridian')
+      .then(r => r.ok ? r.json() : null)
+      .catch(() => null);
+
+    await new Promise(r => setTimeout(r, 1500));
+    const data = await fetchData;
+
+    let briefHtml = fallbackHtml;
+    if (data && data.message) {
+      briefHtml = data.message
+        .split(/\n\n+/)
+        .map(p => `<p>${esc(p.trim())}</p>`)
+        .join('');
+    }
+
+    briefEl.querySelector('.bubble').innerHTML = briefHtml;
+    pendingScene = 'scene2_agenda_review';
+    messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+  }
+
+  // ── Boot ──────────────────────────────────────────────────────────────
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const messages = document.getElementById('messages');
+
+    // Demo sequence state
+    let timerNorthgate   = null;
+    let timerEod         = null;
+    let bootTimer        = null;
+    let bootClosingTimer = null; // inner timer for closing observation after digest renders
+    let demoClickTimer   = null; // timer from btn-demo click handler
+    let demoStage        = 0; // 0=not started  1=waiting for Northgate  2=waiting for EOD  3=complete
+    let demoSteps        = []; // shared step array for autoplay and demo button
+    let demoStepIndex    = 0;  // current position for demo button stepping
+    let northgateAlerted = false;
+    let pollingInterval  = null;
+    let resetId          = 0;   // incremented on each reset to invalidate in-flight async ops
+
+    function cancelTimers() {
+      clearTimeout(timerNorthgate);
+      clearTimeout(timerEod);
+      clearTimeout(bootClosingTimer);
+      clearTimeout(demoClickTimer);
+    }
+
+    // Proactive Northgate alerting — polls /assistant/today every 60 s.
+    function startPolling() {
+      clearInterval(pollingInterval);
+      northgateAlerted = false;
+      pollingInterval = setInterval(async () => {
+        console.log('[cs-agent] polling /assistant/today');
+        if (northgateAlerted || demoStage !== 1) return;
+        try {
+          const res = await fetch('/assistant/today');
+          if (!res.ok) return;
+          const data = await res.json();
+          const northgate = (data.priority_accounts || []).find(a => a.account === 'Northgate Logistics');
+          if (northgate && (northgate.risk === 'at_risk' || northgate.risk === 'watch')) {
+            northgateAlerted = true;
+            clearInterval(pollingInterval);
+            await triggerScene5('1:17 PM');
+          }
+        } catch (_) { /* polling failure is silent */ }
+      }, 60000);
+    }
+
+    // Morning digest — 1.5s typing delay, then fetch and render.
+    // Renders narrative prose — used by Scene 3 recap and other prose endpoints.
+    function renderNarrative(bubble, text) {
+      const lines = (text || '').split('\n').filter(l => l.trim() !== '');
+      const html = lines.map(line => {
+        const escaped = line
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        return `<p>${escaped}</p>`;
+      }).join('');
+      bubble.innerHTML = html || '<p style="color:var(--text-muted)">No content available.</p>';
+    }
+
+    function startBoot() {
+      const myResetId = resetId;
+      bootTimer = setTimeout(async () => {
+        if (resetId !== myResetId) return;
+
+        const _today = new Date();
+        const _dayName = _today.toLocaleDateString('en-US', { weekday: 'long' });
+        const _monthDay = _today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+        messages.appendChild(makeDivider(`${_dayName}, ${_monthDay}`));
+
+        const digestWrap = document.createElement('div');
+        digestWrap.className = 'msg-agent';
+        digestWrap.innerHTML =
+          `<div class="msg-sender-label">CS Agent <span class="msg-time">${SCENE_TIMES.scene1}</span></div>` +
+          `<div class="bubble"><div class="digest-greeting" style="color:var(--text-muted)">Loading your morning digest\u2026</div></div>`;
+        messages.appendChild(digestWrap);
+        messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        const digestBubble = digestWrap.querySelector('.bubble');
+
+        try {
+          const res = await fetch('/assistant/today');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          if (resetId !== myResetId) return;
+          renderTodayDigest(digestBubble, await res.json());
+          if (resetId !== myResetId) return;
+          addTimelineItem('Morning digest', '8:00 AM', digestWrap);
+        } catch (e) {
+          if (resetId !== myResetId) return;
+          digestBubble.innerHTML = '<div class="digest-greeting">Unable to load digest. Make sure the CS Agent server is running.</div>';
+        }
+      }, 1500);
+    }
+
+    // Reset Demo — full reset, identical to Stop.
+    function resetDemo() {
+      stopAutoPlay();
+    }
+
+    document.getElementById('btn-reset').addEventListener('click', resetDemo);
+
+    // Initial startup
+    startPolling();
+    startBoot();
+
+
+    // Demo sequence button — context-aware skip-forward
+    document.getElementById('btn-demo').addEventListener('click', async () => {
+      if (demoSteps.length === 0) {
+        demoSteps = buildDemoSteps();
+        await initDemoSequence();
+      }
+      if (demoStepIndex >= demoSteps.length) return;
+      const step = demoSteps[demoStepIndex++];
+      await step.fn();
+    });
+
+    // Shared Scene 3 trigger — fetches /recap/meridian and renders prose recap bubble.
+    async function triggerScene3(timeStr) {
+      messages.appendChild(makeDivider(`${SCENE_TIMES.scene3} \u2014 Meridian Health call ended`));
+      const loadingMsg = makeAgentMsg(SCENE_TIMES.scene3, '<p>Generating recap\u2026</p>');
+      messages.appendChild(loadingMsg);
+      addTimelineItem('Post-call recap \u00b7 Meridian', SCENE_TIMES.scene3, loadingMsg);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+      const bubble = loadingMsg.querySelector('.bubble');
+
+      bubble.innerHTML =
+        '<p>That sounded like a productive one. Here\'s what I captured.</p>' +
+        '<p><strong>Meridian Health — Call Recap</strong></p>' +
+        '<p>• Product team will provide a written SLA timeline by EOW<br>' +
+        '• QBR confirmed for March 19th at 10am<br>' +
+        '• Power user adoption section (with benchmarks and recommendations) added to QBR agenda<br>' +
+        '• Full QBR agenda to Marcus by end of day Thursday<br>' +
+        '• Marcus sharing internal SLA reporting data with raw numbers by end of week<br>' +
+        '• Sarah to follow up with product team on committed SLA timeline this week</p>' +
+        '<p>I\'ve drafted the follow-up email to Marcus and a Gainsight timeline entry. Want me to send the recap and log it?</p>';
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+
+      // Build three draft cards: recap email, timeline entry, Gainsight CTA
+      function makeCard3(labelText, bodyText) {
+        const cardEl    = makeAgentMsg(SCENE_TIMES.scene3, '');
+        const cardBubble = cardEl.querySelector('.bubble');
+        const labelEl   = document.createElement('div');
+        labelEl.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;';
+        labelEl.textContent = labelText;
+        const bodyEl    = document.createElement('div');
+        bodyEl.style.cssText = 'font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;';
+        bodyEl.textContent = bodyText;
+        cardBubble.appendChild(labelEl);
+        cardBubble.appendChild(bodyEl);
+        messages.appendChild(cardEl);
+        return { cardEl, bodyEl };
+      }
+
+      const card3a = makeCard3(
+        'RECAP EMAIL TO MARCUS',
+        'Hi Marcus \u2014 great call today. Quick summary of what we aligned on:\n\n- Product team will provide a written SLA timeline by EOW\n- QBR confirmed for March 19th at 10am\n- Power user adoption section (with benchmarks and recommendations) added to agenda\n- I\u2019ll send the full QBR agenda by end of day Thursday\n- You\u2019re sharing internal SLA reporting data with raw numbers by end of week\n- I\u2019ll follow up with the product team on the committed timeline this week\n\nThanks again for the time. Talk soon.'
+      );
+      const card3b = makeCard3(
+        'GAINSIGHT TIMELINE ENTRY',
+        'Call with Marcus Reyes (VP Support Ops) \u2014 10:30am. Discussed API SLA gap, QBR agenda, and power user adoption. Product team committed to written timeline by EOW. QBR confirmed March 19th.'
+      );
+      const card3c = makeCard3(
+        'GAINSIGHT CTA',
+        'Follow up: Send written product timeline to Marcus by EOW. Due: Friday March 14th.'
+      );
+
+      // Single consolidated edit row — three buttons side by side, one per card
+      const actionsRow3 = document.createElement('div');
+      actionsRow3.className = 'scene-actions';
+
+      function makeEditBtn3(label, card) {
+        const btn = document.createElement('button');
+        btn.className = 'scene-btn scene-btn-secondary';
+        btn.textContent = label;
+        btn.addEventListener('click', () => {
+          const bodyEl = card.bodyEl;
+          const ta = document.createElement('textarea');
+          ta.className = 'draft-textarea';
+          ta.value = bodyEl.textContent;
+          ta.style.cssText = 'width:100%;min-height:100px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:var(--surface);color:var(--text);margin-top:8px;box-sizing:border-box;';
+          bodyEl.replaceWith(ta);
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'scene-btn scene-btn-secondary';
+          saveBtn.textContent = 'Save';
+          saveBtn.addEventListener('click', () => {
+            const updatedBody = document.createElement('div');
+            updatedBody.style.cssText = bodyEl.style.cssText;
+            updatedBody.textContent = ta.value;
+            ta.replaceWith(updatedBody);
+            card.bodyEl = updatedBody;
+            actionsRow3.remove();
+            const _savedScroll3s = messages.scrollTop;
+            setTimeout(() => { messages.scrollTop = _savedScroll3s; }, 0);
+          });
+          actionsRow3.replaceChildren(saveBtn);
+          const _savedScroll3e = messages.scrollTop;
+          setTimeout(() => { messages.scrollTop = _savedScroll3e; }, 0);
+        });
+        return btn;
+      }
+
+      actionsRow3.appendChild(makeEditBtn3('Edit recap email',    card3a));
+      actionsRow3.appendChild(makeEditBtn3('Edit timeline entry', card3b));
+      actionsRow3.appendChild(makeEditBtn3('Edit Gainsight CTA',  card3c));
+      messages.appendChild(actionsRow3);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    }
+
+    // Scene 4 trigger — mid-day check-in with three priorities and action button.
+    async function triggerScene4(timeStr) {
+      messages.appendChild(makeDivider(`${SCENE_TIMES.scene4} \u2014 Mid-day`));
+      const narrative =
+        'Here are three things to work on, in order of urgency.\n\n' +
+        'First \u2014 Meridian Health. Send Marcus a quick note acknowledging the open commitment from today\u2019s call. He\u2019ll appreciate the follow-through before EOD. I\u2019ve got a draft ready.\n\n' +
+        'Second \u2014 start the QBR deck. You\u2019ve got the agenda locked. I can pull the account data and draft the first two slides if you want to get it moving.\n\n' +
+        'Third \u2014 Northgate. You haven\u2019t touched base with Dana in 11 days. A quick check-in now puts you ahead of the curve before renewal gets close.';
+      const msg = makeAgentMsg(timeStr, '');
+      renderNarrative(msg.querySelector('.bubble'), narrative);
+      messages.appendChild(msg);
+      addTimelineItem('Mid-day check-in', timeStr, msg);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    }
+
+    // Scene 5 trigger — fetches /northgate/alert, renders narrative, then handles Sarah's approval.
+    async function triggerScene5(timestamp) {
+      messages.appendChild(makeDivider(`${SCENE_TIMES.scene5} \u2014 CS Agent`));
+      const loadingMsg = makeAgentMsg(SCENE_TIMES.scene5, '<p>One more thing before this afternoon\u2026</p>');
+      messages.appendChild(loadingMsg);
+      addTimelineItem('Northgate alert', SCENE_TIMES.scene5, loadingMsg);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+      const bubble = loadingMsg.querySelector('.bubble');
+
+      try {
+        const res = await fetch('/northgate/alert');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderNarrative(bubble, data.message || '');
+      } catch (e) {
+        bubble.innerHTML = '<p>Unable to load Northgate alert. Make sure the CS Agent server is running.</p>';
+      }
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+      pendingScene = 'scene5_northgate';
+    }
+
+    // ── Input bar wiring ──────────────────────────────────────────────────
+    const inputField = document.querySelector('.input-field');
+    const sendBtn    = document.querySelector('.send-btn');
+
+    // Scripted response dispatcher
+    function handleScriptedResponse(msg, timeStr) {
+      if (isNegative(msg)) {
+        const el = makeAgentMsg(timeStr, '<p>Got it \u2014 let me know if you change your mind.</p>');
+        messages.appendChild(el);
+        messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        pendingScene = null;
+        return true;
+      }
+      const isEodPhrase = /finishing up|give me a recap|end of day|wrap.*day|eod/i.test(msg);
+      if (!isAffirmative(msg) && !isEodPhrase) return false;
+
+      const el = makeAgentMsg(timeStr, '');
+      messages.appendChild(el);
+
+      switch (pendingScene) {
+        case 'scene2_agenda_review':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Here\u2019s the draft. Say the word and I\u2019ll send it to Marcus.</p>' +
+            '<div class="email-preview">' +
+              '<div class="email-label">EMAIL DRAFT</div>' +
+              '<div class="email-field-row"><span class="email-field">To</span><span class="email-val">Marcus Reyes &lt;marcus.reyes@meridianhealth.example&gt;</span></div>' +
+              '<div class="email-field-row"><span class="email-field">Subject</span><span class="email-val">Meridian &amp; Clarify \u2014 QBR agenda, March 19th</span></div>' +
+              '<div class="email-body">Hi Marcus,\n\nAs promised \u2014 here\u2019s the agenda for our QBR on March 19th at 10am.\n\n1. Welcome and relationship check-in (5 min)\n2. Platform performance update \u2014 API response times and SLA progress (15 min)\n3. Power user adoption review \u2014 current state and recommendations (15 min)\n4. Roadmap items relevant to Meridian\u2019s use case (10 min)\n5. Strategic goals for Year 3 \u2014 aligning on outcomes (10 min)\n6. Next steps and commitments (5 min)\n\nLooking forward to it. Let me know if you\u2019d like to add or adjust anything.\n\nTalk soon,\nSarah</div>' +
+            '</div>';
+          pendingScene = 'scene2_agenda_approve';
+          {
+            const actionsRow2 = document.createElement('div');
+            actionsRow2.className = 'scene-actions';
+            const editBtn2 = document.createElement('button');
+            editBtn2.className = 'scene-btn scene-btn-secondary';
+            editBtn2.textContent = 'Edit draft';
+            editBtn2.addEventListener('click', () => {
+              const bodyEl = el.querySelector('.email-body');
+              const ta = document.createElement('textarea');
+              ta.className = 'draft-textarea';
+              ta.value = bodyEl.textContent;
+              ta.style.cssText = 'width:100%;min-height:140px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:var(--surface);color:var(--text);margin-top:8px;box-sizing:border-box;';
+              bodyEl.replaceWith(ta);
+              const saveBtn2 = document.createElement('button');
+              saveBtn2.className = 'scene-btn scene-btn-secondary';
+              saveBtn2.textContent = 'Save';
+              saveBtn2.addEventListener('click', () => {
+                const updatedBody = document.createElement('div');
+                updatedBody.className = 'email-body';
+                updatedBody.textContent = ta.value;
+                ta.replaceWith(updatedBody);
+                actionsRow2.remove();
+                const _savedScroll2s = messages.scrollTop;
+                setTimeout(() => { messages.scrollTop = _savedScroll2s; }, 0);
+              });
+              actionsRow2.replaceChildren(saveBtn2);
+              const _savedScroll2e = messages.scrollTop;
+              setTimeout(() => { messages.scrollTop = _savedScroll2e; }, 0);
+            });
+            actionsRow2.appendChild(editBtn2);
+            messages.appendChild(actionsRow2);
+          }
+          break;
+
+        case 'scene2_agenda_approve':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Done \u2014 agenda sent to Marcus. I\u2019ve noted in Gainsight that the QBR is confirmed for March 19th. You\u2019re ready for the 9:30.</p>';
+          pendingScene = null;
+          break;
+
+        case 'scene3_recap':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Here\u2019s the follow-up email I\u2019ve drafted for Marcus. I\u2019ll log the call as a timeline entry in Gainsight at the same time. Send it?</p>' +
+            '<div class="email-preview">' +
+              '<div class="email-label">EMAIL DRAFT</div>' +
+              '<div class="email-field-row"><span class="email-field">To</span><span class="email-val">Marcus Reyes &lt;marcus.reyes@meridianhealth.example&gt;</span></div>' +
+              '<div class="email-field-row"><span class="email-field">Subject</span><span class="email-val">Meridian &amp; Clarify \u2014 QBR March 19th + product update</span></div>' +
+              '<div class="email-body">Hi Marcus,\n\nGreat speaking today. Confirmed for March 19th at 10am \u2014 I\u2019ll include the power user adoption section you requested.\n\nOn the SLA item: I\u2019ve flagged it with our product team and will have a written update with committed timeline to you by Friday.\n\nTalk soon,\nSarah</div>' +
+            '</div>';
+          pendingScene = 'scene3_recap_approve';
+          break;
+
+        case 'scene3_recap_approve':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Done. Recap sent to Marcus at 10:47am. Timeline entry logged in Gainsight \u2014 call marked as completed with commitments captured. The CTA for the product update is set for Friday February 28th.</p>';
+          pendingScene = null;
+          break;
+
+        case 'scene4_actions':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Here\u2019s the note to Jamie. Good to go?</p>' +
+            '<div class="draft-block">' +
+              '<div class="draft-label">NOTE TO JAMIE \u2014 PRODUCT TEAM</div>' +
+              '<div class="draft-body">Hi Jamie \u2014 following up from the Meridian call. Marcus needs a written product update with committed SLA timeline before end of month. Can you send me something I can pass to him by Friday? Happy to jump on a call.</div>' +
+            '</div>';
+          pendingScene = 'scene4_approve';
+          {
+            const actionsRow4 = document.createElement('div');
+            actionsRow4.className = 'scene-actions';
+            const editBtn4 = document.createElement('button');
+            editBtn4.className = 'scene-btn scene-btn-secondary';
+            editBtn4.textContent = 'Edit draft';
+            editBtn4.addEventListener('click', () => {
+              const bodyEl = el.querySelector('.draft-body');
+              const ta = document.createElement('textarea');
+              ta.className = 'draft-textarea';
+              ta.value = bodyEl.textContent;
+              ta.style.cssText = 'width:100%;min-height:100px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:var(--surface);color:var(--text);margin-top:8px;box-sizing:border-box;';
+              bodyEl.replaceWith(ta);
+              const saveBtn4 = document.createElement('button');
+              saveBtn4.className = 'scene-btn scene-btn-secondary';
+              saveBtn4.textContent = 'Save';
+              saveBtn4.addEventListener('click', () => {
+                const updatedBody = document.createElement('div');
+                updatedBody.className = 'draft-body';
+                updatedBody.textContent = ta.value;
+                ta.replaceWith(updatedBody);
+                actionsRow4.remove();
+                const _savedScroll4s = messages.scrollTop;
+                setTimeout(() => { messages.scrollTop = _savedScroll4s; }, 0);
+              });
+              actionsRow4.replaceChildren(saveBtn4);
+              const _savedScroll4e = messages.scrollTop;
+              setTimeout(() => { messages.scrollTop = _savedScroll4e; }, 0);
+            });
+            actionsRow4.appendChild(editBtn4);
+            messages.appendChild(actionsRow4);
+          }
+          break;
+
+        case 'scene4_approve':
+          // Closing confirmation is handled by the autoplay sequence (T+133s)
+          el.querySelector('.bubble').innerHTML =
+            '<p>On it. Here\u2019s where the QBR deck stands.</p>' +
+            buildCtaHtml('QBR Deck \u2014 Power User Adoption Section', 'Meridian Health', 'Mar 19, 2026', 'High');
+          pendingScene = null;
+          break;
+
+        case 'scene5_northgate':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Here\u2019s what I have. Ready to send?</p>' +
+            '<div class="email-preview">' +
+              '<div class="email-label">EMAIL DRAFT</div>' +
+              '<div class="email-field-row"><span class="email-field">To</span><span class="email-val">Dana Mills &lt;dana.mills@northgatelogistics.example&gt;</span></div>' +
+              '<div class="email-field-row"><span class="email-field">Subject</span><span class="email-val">Quick check-in from Sarah</span></div>' +
+              '<div class="email-body">Hi Dana,\n\nJust wanted to check in \u2014 it\u2019s been a couple of weeks and I know Q1 can get hectic. We released a workflow automation update last week that I think would be genuinely useful for your team\u2019s current setup.\n\nNo agenda \u2014 just wanted to make sure everything is running smoothly on your end. Happy to jump on a quick call this week if that\u2019s useful.\n\nTalk soon,\nSarah</div>' +
+            '</div>' +
+            '<div class="draft-block">' +
+              '<div class="draft-label">GAINSIGHT CTA \u2014 RISK FLAG</div>' +
+              '<div class="draft-body">Risk flag \u2014 Northgate Logistics. 11-day login gap, adoption down 42pp, renewal in 45 days. Primary contact gone quiet. Recommend outreach before 30-day mark. Owner: Sarah C.</div>' +
+            '</div>';
+          pendingScene = 'scene5_approve';
+          {
+            const actionsRow5 = document.createElement('div');
+            actionsRow5.className = 'scene-actions';
+
+            // Edit email draft button
+            const editEmailBtn5 = document.createElement('button');
+            editEmailBtn5.className = 'scene-btn scene-btn-secondary';
+            editEmailBtn5.textContent = 'Edit email draft';
+            editEmailBtn5.addEventListener('click', () => {
+              const bodyEl = el.querySelector('.email-body');
+              const ta = document.createElement('textarea');
+              ta.className = 'draft-textarea';
+              ta.value = bodyEl.textContent;
+              ta.style.cssText = 'width:100%;min-height:120px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:var(--surface);color:var(--text);margin-top:8px;box-sizing:border-box;';
+              bodyEl.replaceWith(ta);
+              const saveBtn = document.createElement('button');
+              saveBtn.className = 'scene-btn scene-btn-secondary';
+              saveBtn.textContent = 'Save';
+              saveBtn.addEventListener('click', () => {
+                const updatedBody = document.createElement('div');
+                updatedBody.className = 'email-body';
+                updatedBody.textContent = ta.value;
+                ta.replaceWith(updatedBody);
+                actionsRow5.remove();
+                const _savedScroll5es = messages.scrollTop;
+                setTimeout(() => { messages.scrollTop = _savedScroll5es; }, 0);
+              });
+              actionsRow5.replaceChildren(saveBtn);
+              const _savedScroll5ee = messages.scrollTop;
+              setTimeout(() => { messages.scrollTop = _savedScroll5ee; }, 0);
+            });
+
+            // Edit Gainsight CTA button
+            const editCtaBtn5 = document.createElement('button');
+            editCtaBtn5.className = 'scene-btn scene-btn-secondary';
+            editCtaBtn5.textContent = 'Edit Gainsight CTA';
+            editCtaBtn5.addEventListener('click', () => {
+              const bodyEl = el.querySelector('.draft-body');
+              const ta = document.createElement('textarea');
+              ta.className = 'draft-textarea';
+              ta.value = bodyEl.textContent;
+              ta.style.cssText = 'width:100%;min-height:80px;font-family:inherit;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:6px;resize:vertical;background:var(--surface);color:var(--text);margin-top:8px;box-sizing:border-box;';
+              bodyEl.replaceWith(ta);
+              const saveBtn = document.createElement('button');
+              saveBtn.className = 'scene-btn scene-btn-secondary';
+              saveBtn.textContent = 'Save';
+              saveBtn.addEventListener('click', () => {
+                const updatedBody = document.createElement('div');
+                updatedBody.className = 'draft-body';
+                updatedBody.textContent = ta.value;
+                ta.replaceWith(updatedBody);
+                actionsRow5.remove();
+                const _savedScroll5cs = messages.scrollTop;
+                setTimeout(() => { messages.scrollTop = _savedScroll5cs; }, 0);
+              });
+              actionsRow5.replaceChildren(saveBtn);
+              const _savedScroll5ce = messages.scrollTop;
+              setTimeout(() => { messages.scrollTop = _savedScroll5ce; }, 0);
+            });
+
+            actionsRow5.appendChild(editEmailBtn5);
+            actionsRow5.appendChild(editCtaBtn5);
+            messages.appendChild(actionsRow5);
+          }
+          break;
+
+        case 'scene5_approve': {
+          el.querySelector('.bubble').innerHTML =
+            '<p>Done. Message sent to Dana. Risk CTA logged in Gainsight and flagged for your team. I\u2019ll let you know the moment she responds.</p>';
+          pendingScene = null;
+          demoStage = 4;
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          break;
+        }
+
+        case 'scene6_pinnacle':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Here\u2019s what I\u2019ll send to support on your behalf. Good to go?</p>' +
+            '<div class="draft-block">' +
+              '<div class="draft-label">SUPPORT REQUEST \u2014 PINNACLE GROUP</div>' +
+              '<div class="draft-body">Hi team \u2014 following up on Pinnacle Group\u2019s dashboard loading issue (ticket open 3 days). They\u2019re healthy but this is starting to affect their daily workflow. Can we get a timeline update? I\u2019d like to share something with them by tomorrow morning.</div>' +
+            '</div>';
+          pendingScene = 'scene6_approve';
+          break;
+
+        case 'scene6_approve':
+          el.querySelector('.bubble').innerHTML =
+            '<p>Sent. Support team has the request. Great work today.</p>';
+          pendingScene = null;
+          demoStage = 5;
+          break;
+
+        default:
+          messages.removeChild(el);
+          return false;
+      }
+
+      // Fallback: if bubble is still empty after switch, show generic confirmation
+      if (!el.querySelector('.bubble').innerHTML.trim()) {
+        el.querySelector('.bubble').innerHTML =
+          '<p>On it. Note to Jamie is sending now. QBR deck structure is underway \u2014 I\u2019ll have a draft ready before end of day. And I\u2019ve sent the check-in to Dana at Northgate. I\u2019ll flag anything that comes back.</p>';
+      }
+
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+      return true;
+    }
+
+    async function sendChat(text) {
+      const msg = text.trim();
+      if (!msg) return;
+      inputField.value = '';
+
+      // Show Sarah's message
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const sarahEl = document.createElement('div');
+      sarahEl.className = 'msg-sarah';
+      sarahEl.innerHTML =
+        `<div class="msg-sender-label">Sarah C. <span class="msg-time">${esc(timeStr)}</span></div>` +
+        `<div class="bubble">${esc(msg)}</div>`;
+      messages.appendChild(sarahEl);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+
+      // ── Pending scene interception (has priority) ──────────────────────
+      if (pendingScene !== null) {
+        const handled = handleScriptedResponse(msg, timeStr);
+        if (handled) return;
+        // Not affirmative or negative — fall through to /chat
+      }
+
+      // ── Scene 4 intercept — priority list ─────────────────────────────
+      if (/what should i (be )?work(ing)? on|what('s| is) my priority|what do i do now/i.test(msg)) {
+        const scene4El = makeAgentMsg(timeStr,
+          '<p>Three things, in order of urgency.</p>' +
+          '<p>First \u2014 Meridian. Jamie on the product team needs a committed SLA update from you before end of day. You made that commitment on the call. I\u2019ve drafted the note \u2014 ready to send.</p>' +
+          '<p>Second \u2014 the QBR deck. Marcus confirmed March 19th. He wants the power user adoption section included. I can start building it now while you\u2019re in your afternoon calls.</p>' +
+          '<p>Third \u2014 Northgate. I flagged them this morning. Dana has gone quiet and renewal is in 47 days. A check-in draft is ready when you are.</p>' +
+          '<p>You have time for all three. Want me to move on all of them?</p>'
+        );
+        messages.appendChild(scene4El);
+        addTimelineItem('Mid-day priorities', timeStr, scene4El);
+        messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        pendingScene = 'scene4_actions';
+        return;
+      }
+
+      // ── Talking points intercept ──────────────────────────────────────
+      if (/talking points|pull talking points|prep me|what should i say|how should i approach/i.test(msg)) {
+        const tpEl = makeAgentMsg(timeStr, '<p style="color:var(--text-muted)">Pulling talking points\u2026</p>');
+        messages.appendChild(tpEl);
+        messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        await new Promise(r => setTimeout(r, 1500));
+        tpEl.querySelector('.bubble').innerHTML =
+          '<p>Three things Marcus will likely raise today.</p>' +
+          '<p>The SLA gap \u2014 first response times are still above their 4-hour target. He\u2019ll want to know where the product team stands and when it gets resolved. Have a specific date, not \u201cwe\u2019re working on it.\u201d</p>' +
+          '<p>The open commitment \u2014 you said you\u2019d send a written update from the product team. It hasn\u2019t gone out yet. He\u2019ll notice. Get ahead of it.</p>' +
+          '<p>The QBR agenda \u2014 he confirmed March 19th and asked for a power user adoption section. He may ask if you\u2019ve started building it.</p>';
+        messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        return;
+      }
+
+      // ── Route to /chat ─────────────────────────────────────────────────
+      const loadingEl = makeAgentMsg(timeStr, '<p>&#8230;</p>');
+      messages.appendChild(loadingEl);
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: msg }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        loadingEl.querySelector('.bubble').innerHTML = `<p>${esc(data.reply)}</p>`;
+      } catch (e) {
+        loadingEl.querySelector('.bubble').innerHTML = '<p>Unable to reach CS Agent. Make sure the server is running.</p>';
+      }
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    }
+
+    sendBtn.addEventListener('click', () => sendChat(inputField.value));
+    inputField.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendChat(inputField.value); });
+
+
+// ── Auto-play demo mode ───────────────────────────────────────────
+    const btnAutoplay = document.getElementById('btn-autoplay');
+    const btnStop     = document.getElementById('btn-stop');
+    const btnPause    = document.getElementById('btn-pause');
+
+    let autoPlaySteps    = [];   // { fn, delayMs, fired, id }
+    let autoPlayStartTime = 0;   // Date.now() when scheduling began
+    let autoPlayPausedMs  = 0;   // ms elapsed at pause point
+    let autoPlayPaused    = false;
+    let autoPlayRunning   = false;
+
+    // Creates a right-aligned Sarah message element.
+    function makeSarahMsg(time, text) {
+      const el = document.createElement('div');
+      el.className = 'msg-sarah';
+      el.innerHTML =
+        `<div class="msg-sender-label">Sarah C. <span class="msg-time">${esc(time)}</span></div>` +
+        `<div class="bubble">${esc(text)}</div>`;
+      return el;
+    }
+
+    // Schedules fn after delayMs; tracks the step so Stop/Pause can cancel it.
+    function apSched(fn, delayMs) {
+      const step = { fn, delayMs, fired: false, id: null };
+      step.id = setTimeout(() => { step.fired = true; fn(); }, delayMs);
+      autoPlaySteps.push(step);
+      return step.id;
+    }
+
+    function stopAutoPlay() {
+      resetId++;  // invalidate any in-flight async ops
+
+      // Cancel autoplay timers
+      autoPlaySteps.forEach(s => clearTimeout(s.id));
+      autoPlaySteps  = [];
+
+      // Cancel all other timers
+      cancelTimers();
+      clearTimeout(bootTimer);
+      clearInterval(pollingInterval);
+
+      // Reset all state
+      autoPlayRunning  = false;
+      autoPlayPaused   = false;
+      pendingScene     = null;
+      demoStage        = 0;
+      northgateAlerted = false;
+      demoSteps        = [];
+      demoStepIndex    = 0;
+
+      // Clear feed and timeline
+      messages.innerHTML = '';
+      const tl = document.getElementById('timeline-list');
+      if (tl) tl.innerHTML = '';
+      activeTimelineItem = null;
+
+      // Reset controls
+      btnAutoplay.disabled   = false;
+      btnStop.style.display  = 'none';
+      btnPause.style.display = 'none';
+      btnPause.textContent   = '\u23F8 Pause';
+
+      console.log('[cs-agent] demo reset');
+    }
+
+    function pauseAutoPlay() {
+      if (!autoPlayRunning || autoPlayPaused) return;
+      autoPlayPausedMs = Date.now() - autoPlayStartTime;
+      autoPlaySteps.forEach(s => { if (!s.fired) clearTimeout(s.id); });
+      autoPlayPaused = true;
+      btnPause.textContent = '\u25B6 Resume';
+      console.log('[cs-agent] auto-play paused at', autoPlayPausedMs, 'ms');
+    }
+
+    function resumeAutoPlay() {
+      if (!autoPlayRunning || !autoPlayPaused) return;
+      const now = Date.now();
+      autoPlayStartTime = now - autoPlayPausedMs;
+      autoPlaySteps.forEach(s => {
+        if (!s.fired) {
+          const remaining = Math.max(0, autoPlayStartTime + s.delayMs - now);
+          s.id = setTimeout(() => { s.fired = true; s.fn(); }, remaining);
+        }
+      });
+      autoPlayPaused = false;
+      btnPause.textContent = '\u23F8 Pause';
+      console.log('[cs-agent] auto-play resumed,', autoPlaySteps.filter(s => !s.fired).length, 'steps pending');
+    }
+
+    // ── Shared demo steps ──────────────────────────────────────────────────
+    // Returns the full scripted sequence as {delayMs, fn} objects.
+    // Used by autoplay (setTimeout scheduling) and Demo button (click-to-advance).
+    function buildDemoSteps() {
+      return [
+        // T+4s — CS Agent: opening observation
+        { delayMs: 4000, fn: () => {
+          const el = makeAgentMsg(SCENE_TIMES.scene1,
+            '<p>One thing before your first call \u2014 the product follow-up you committed to for Meridian is still open. Want me to draft a note to Jamie on the product team now so it\u2019s moving before your 9:30?</p>');
+          messages.appendChild(el);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+8s — Sarah: situation on Meridian
+        { delayMs: 8000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene1, 'First, what\u2019s the situation with Meridian before my call with Marcus?'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+13s — CS Agent: Meridian brief
+        { delayMs: 13000, fn: () => {
+          const el = makeAgentMsg(SCENE_TIMES.scene1,
+            '<p>Meridian Health is a $220K account in year 2 of a 3-year contract with 340 seats.</p>' +
+            '<p>The core issue: API response time degradation is causing them to miss their first response time SLAs. This has been unresolved long enough that their QBR is now overdue \u2014 and you have two overdue CTAs tied to it: the product team follow-up and the QBR agenda.</p>' +
+            '<p>Marcus is VP of Support Operations, so he\u2019ll be feeling this directly. I\u2019d expect him to lead with the SLA impact before anything else.</p>');
+          messages.appendChild(el);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+20s — Sarah: talking points
+        { delayMs: 20000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene1, 'Can you pull talking points for the call?'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+25s — CS Agent: talking points
+        { delayMs: 25000, fn: () => {
+          const el = makeAgentMsg(SCENE_TIMES.scene1,
+            '<p>Three things Marcus will likely raise today.</p>' +
+            '<p>The SLA gap \u2014 first response times are still above their 4-hour target. He\u2019ll want to know where the product team stands and when it gets resolved. Have a specific date, not \u201cwe\u2019re working on it.\u201d</p>' +
+            '<p>The open commitment \u2014 you said you\u2019d send a written update from the product team. It hasn\u2019t gone out yet. He\u2019ll notice. Get ahead of it.</p>' +
+            '<p>The QBR agenda \u2014 he confirmed March 19th and asked for a power user adoption section. He may ask if you\u2019ve started building it.</p>');
+          messages.appendChild(el);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+35s — Scene 2: pre-call brief
+        { delayMs: 35000, fn: async () => {
+          demoStage = 1;
+          try { await triggerScene2(messages); } catch (e) { console.error('Scene 2 error:', e); }
+        }},
+        // T+42s — Sarah: yes, show me the agenda
+        { delayMs: 42000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene2, 'Yes, show me the agenda'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+47s — CS Agent: agenda card (scene2_agenda_review → Edit draft button)
+        { delayMs: 47000, fn: () => {
+          handleScriptedResponse('show me', SCENE_TIMES.scene2);
+        }},
+        // T+53s — Sarah: looks good, send it
+        { delayMs: 53000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene2, 'Looks good, send it to Marcus'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+57s — CS Agent: scene2_agenda_approve confirmation
+        { delayMs: 57000, fn: () => {
+          handleScriptedResponse('looks good', SCENE_TIMES.scene2);
+        }},
+        // T+65s — Scene 3: post-call recap (+ consolidated Edit draft row)
+        { delayMs: 65000, fn: async () => {
+          await triggerScene3(SCENE_TIMES.scene3);
+        }},
+        // T+71s — Sarah: yes, send the recap
+        { delayMs: 71000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene3, 'Yes, send the recap and log it in Gainsight'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          fetch('/recap/meridian/confirm', { method: 'POST' }).catch(() => {});
+        }},
+        // T+74s — CS Agent: recap confirmation
+        { delayMs: 74000, fn: () => {
+          const confirmEl = makeAgentMsg(SCENE_TIMES.scene3,
+            '<p>Done. Recap sent to Marcus. Timeline entry logged in Gainsight.</p>');
+          messages.appendChild(confirmEl);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+83s — Sarah: what should I be working on?
+        { delayMs: 83000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene4, 'What should I be working on right now?'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+88s — CS Agent: Scene 4 priority list (live from /priorities/midday)
+        { delayMs: 88000, fn: async () => {
+          const el = makeAgentMsg(SCENE_TIMES.scene4, '<p style="color:var(--text-muted)">CS Agent is thinking\u2026</p>');
+          messages.appendChild(el);
+          addTimelineItem('Mid-day priorities', SCENE_TIMES.scene4, el);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          const fetchData = fetch('/priorities/midday')
+            .then(r => r.ok ? r.json() : null)
+            .catch(() => null);
+          await new Promise(r => setTimeout(r, 1500));
+          const data = await fetchData;
+          if (data && data.message) {
+            renderNarrative(el.querySelector('.bubble'), data.message);
+          } else {
+            el.querySelector('.bubble').innerHTML =
+              '<p>Three things, in order of urgency. First \u2014 Meridian SLA update for Jamie. Second \u2014 the QBR deck for March 19th. Third \u2014 Northgate check-in for Dana.</p>';
+          }
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          pendingScene = 'scene4_actions';
+        }},
+        // T+101s — Sarah: yes, move on all three
+        { delayMs: 101000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene4, 'Yes, move on all three'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+113s — CS Agent: Jamie draft (scene4_actions → Edit draft button)
+        { delayMs: 113000, fn: () => {
+          handleScriptedResponse('yes', SCENE_TIMES.scene4);
+        }},
+        // T+119s — Sarah: send it
+        { delayMs: 119000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene4, 'Send it'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+123s — CS Agent: QBR deck card (scene4_approve)
+        { delayMs: 123000, fn: () => {
+          handleScriptedResponse('send it', SCENE_TIMES.scene4);
+        }},
+        // T+128s — CS Agent: Dana email draft
+        { delayMs: 128000, fn: () => {
+          const danaDraftBody4 =
+            'Hi Dana,\n\nJust wanted to check in \u2014 it\u2019s been a couple of weeks and I know Q1 gets busy. We released a workflow automation update last week that I think would be genuinely useful for your team\u2019s current setup.\n\n' +
+            'No agenda \u2014 just wanted to reconnect and see if a quick call this week would be useful.\n\nBest,\nSarah';
+          const danaEl4 = makeAgentMsg(SCENE_TIMES.scene4, buildEmailHtml('Dana Mills', 'Quick check-in from Sarah', danaDraftBody4));
+          messages.appendChild(danaEl4);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+133s — CS Agent: closing confirmation for all three
+        { delayMs: 133000, fn: () => {
+          const closeEl = makeAgentMsg(SCENE_TIMES.scene4,
+            '<p>Done. Jamie has the request \u2014 you\u2019ll have something for Marcus by Friday. QBR deck is in progress. I\u2019ve queued the note to Dana \u2014 I\u2019ll flag you if I don\u2019t hear back before end of day.</p>');
+          messages.appendChild(closeEl);
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+143s — Scene 5: Northgate alert → narrative → pendingScene → Edit draft button on next click
+        { delayMs: 143000, fn: async () => {
+          try { await triggerScene5(SCENE_TIMES.scene5); } catch (e) { console.error('Scene 5 error:', e); }
+        }},
+        // T+152s — Sarah: approves seeing the Dana draft (triggers email card + edit button)
+        { delayMs: 152000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene5, 'Yes, show me what you have.'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          handleScriptedResponse('yes', SCENE_TIMES.scene5);
+        }},
+        // T+164s — Sarah: approves sending to Dana
+        { delayMs: 164000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene5, 'Send it to Dana and log the CTA.'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+          if (pendingScene === 'scene5_approve') {
+            handleScriptedResponse('yes', SCENE_TIMES.scene5);
+          }
+        }},
+        // T+170s — Sarah: kicks off Scene 6
+        { delayMs: 170000, fn: () => {
+          messages.appendChild(makeSarahMsg(SCENE_TIMES.scene6, 'Finishing up my day. How did we do?'));
+          messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }},
+        // T+173s — Scene 6: EOD summary
+        { delayMs: 173000, fn: async () => {
+          try { await triggerEod(messages); } catch (e) { console.error('EOD error:', e); }
+        }},
+        // T+182s — demo complete
+        { delayMs: 182000, fn: () => {
+          autoPlayRunning        = false;
+          autoPlayPaused         = false;
+          btnAutoplay.disabled   = false;
+          btnStop.style.display  = 'none';
+          btnPause.style.display = 'none';
+          console.log('[cs-agent] auto-play complete');
+        }},
+      ];
+    }
+
+    // Shared init: clears the feed, renders a fresh digest, resets state.
+    // Used by both autoplay and demo-button first click.
+    async function initDemoSequence() {
+      cancelTimers();
+      clearTimeout(bootTimer);
+      clearInterval(pollingInterval);
+      northgateAlerted = true;
+      pendingScene     = null;
+      demoStage        = 0;
+      demoStepIndex    = 0;
+
+      messages.innerHTML = '';
+      const tl = document.getElementById('timeline-list');
+      if (tl) tl.innerHTML = '';
+      activeTimelineItem = null;
+
+      const _today    = new Date();
+      const _dayName  = _today.toLocaleDateString('en-US', { weekday: 'long' });
+      const _monthDay = _today.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+      messages.appendChild(makeDivider(`${_dayName}, ${_monthDay}`));
+
+      const digestWrap = document.createElement('div');
+      digestWrap.className = 'msg-agent';
+      digestWrap.innerHTML =
+        `<div class="msg-sender-label">CS Agent <span class="msg-time">${SCENE_TIMES.scene1}</span></div>` +
+        `<div class="bubble"><div class="digest-greeting">Loading your morning digest\u2026</div></div>`;
+      messages.appendChild(digestWrap);
+      const apBubble = digestWrap.querySelector('.bubble');
+
+      try {
+        const res = await fetch('/assistant/today');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        renderTodayDigest(apBubble, await res.json());
+        addTimelineItem('Morning digest', '8:00 AM', digestWrap);
+      } catch (e) {
+        apBubble.innerHTML = '<div class="digest-greeting">Unable to load digest.</div>';
+      }
+      messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+    }
+
+    async function startAutoPlay() {
+      if (autoPlayRunning) return;
+      autoPlayRunning       = true;
+      autoPlayPaused        = false;
+      autoPlaySteps         = [];
+      btnAutoplay.disabled  = true;
+      btnStop.style.display  = '';
+      btnPause.style.display = '';
+      btnPause.textContent   = '\u23F8 Pause';
+
+      await initDemoSequence();
+
+      // ── Scheduled sequence ─────────────────────────────────────────
+      autoPlayStartTime = Date.now();
+      demoSteps = buildDemoSteps();
+      demoStepIndex = demoSteps.length; // autoplay owns scheduling; index not used for stepping
+      for (const step of demoSteps) {
+        apSched(step.fn, step.delayMs);
+      }
+    }
+
+    btnAutoplay.addEventListener('click', () => {
+      startAutoPlay().catch(e => console.error('Auto-play error:', e));
+    });
+    btnStop.addEventListener('click', stopAutoPlay);
+    btnPause.addEventListener('click', () => {
+      if (autoPlayPaused) resumeAutoPlay(); else pauseAutoPlay();
+    });
+
+    // ── Integrations panel ────────────────────────────────────────────
+    const intgPanel    = document.getElementById('intg-panel');
+    const intgBackdrop = document.getElementById('intg-backdrop');
+    const btnIntg      = document.getElementById('btn-intg');
+    const intgClose    = document.getElementById('intg-close');
+
+    function openIntg() {
+      intgPanel.classList.add('open');
+      intgBackdrop.classList.add('open');
+      btnIntg.classList.add('active');
+    }
+    function closeIntg() {
+      intgPanel.classList.remove('open');
+      intgBackdrop.classList.remove('open');
+      btnIntg.classList.remove('active');
+    }
+
+    btnIntg.addEventListener('click', () =>
+      intgPanel.classList.contains('open') ? closeIntg() : openIntg()
+    );
+    intgClose.addEventListener('click', closeIntg);
+    intgBackdrop.addEventListener('click', closeIntg);
+
+    // ── Dark mode toggle ──────────────────────────────────────────────
+    const btnTheme = document.getElementById('btn-theme');
+    btnTheme.addEventListener('click', () => {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      btnTheme.textContent = isDark ? '\u263E' : '\u2600';
+    });
+
+    // ── Presentation mode ──────────────────────────────────────────────
+    const btnPresent  = document.getElementById('btn-present');
+    const presentExit = document.getElementById('present-exit');
+    let presentMode   = false;
+
+    function enterPresentMode() {
+      presentMode = true;
+      document.body.classList.add('present-mode');
+      document.title = 'CS Agent \u2014 Sarah C. at Clarify';
+    }
+
+    function exitPresentMode() {
+      presentMode = false;
+      document.body.classList.remove('present-mode');
+      document.title = 'CS Agent';
+    }
+
+    btnPresent.addEventListener('click', () => presentMode ? exitPresentMode() : enterPresentMode());
+    presentExit.addEventListener('click', exitPresentMode);
+
+  });
+</script>
+
+<!-- ── Present mode exit ──────────────────────────────────────────── -->
+<button class="present-exit-btn" id="present-exit">&#x2715; Exit Presentation</button>
+
+<!-- ── Integrations panel ──────────────────────────────────────────── -->
+<div class="intg-backdrop" id="intg-backdrop"></div>
+
+<div class="intg-panel" id="intg-panel">
+  <div class="intg-header">
+    <span class="intg-title">Integrations</span>
+    <button class="intg-close" id="intg-close">&times;</button>
+  </div>
+
+  <div class="intg-explainer">
+    CS Agent connects to the tools your team already uses. The more it&rsquo;s connected, the more it already knows &mdash; so you spend less time finding information and more time using it.
+  </div>
+
+  <!-- Connected -->
+  <div class="intg-section-label">Connected</div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:#EA4335">G</div>
+    <div class="intg-info">
+      <div class="intg-name">Gmail</div>
+      <div class="intg-desc">Read emails and draft outreach directly in CS Agent.</div>
+    </div>
+    <div class="intg-status-dot"></div>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:#4285F4">G</div>
+    <div class="intg-info">
+      <div class="intg-name">Google Calendar</div>
+      <div class="intg-desc">Surface today&rsquo;s meetings and trigger pre-call briefs automatically.</div>
+    </div>
+    <div class="intg-status-dot"></div>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:#4A154B">S</div>
+    <div class="intg-info">
+      <div class="intg-name">Slack</div>
+      <div class="intg-desc">Deliver morning digests and proactive alerts to your channel.</div>
+    </div>
+    <div class="intg-status-dot"></div>
+  </div>
+
+  <!-- Available -->
+  <div class="intg-section-label">Available</div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">S</div>
+    <div class="intg-info">
+      <div class="intg-name">Salesforce</div>
+      <div class="intg-desc">Sync account data, contacts, and opportunity history.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">G</div>
+    <div class="intg-info">
+      <div class="intg-name">Gainsight</div>
+      <div class="intg-desc">Log timeline entries and manage CTAs automatically.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">Z</div>
+    <div class="intg-info">
+      <div class="intg-name">Zoom</div>
+      <div class="intg-desc">Pull call recordings for automatic transcript summarization.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">G</div>
+    <div class="intg-info">
+      <div class="intg-name">Gong</div>
+      <div class="intg-desc">Ingest call recordings and surface conversation intelligence.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">Z</div>
+    <div class="intg-info">
+      <div class="intg-name">Zendesk</div>
+      <div class="intg-desc">Track support tickets and surface open issues in briefings.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">D</div>
+    <div class="intg-info">
+      <div class="intg-name">Google Drive</div>
+      <div class="intg-desc">Access and attach account documents in pre-call prep.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <div class="intg-item">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">S</div>
+    <div class="intg-info">
+      <div class="intg-name">Snowflake</div>
+      <div class="intg-desc">Query product usage data directly from your data warehouse.</div>
+    </div>
+    <button class="intg-connect-btn">Connect<span class="intg-tooltip">Coming in the next release</span></button>
+  </div>
+
+  <!-- Coming Soon -->
+  <div class="intg-section-label">Coming Soon</div>
+
+  <div class="intg-item dimmed">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">G</div>
+    <div class="intg-info">
+      <div class="intg-name">Glean</div>
+      <div class="intg-desc">Surface enterprise search results in account research.</div>
+    </div>
+    <span class="intg-coming-tag">Soon</span>
+  </div>
+
+  <div class="intg-item dimmed">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">S</div>
+    <div class="intg-info">
+      <div class="intg-name">Seismic</div>
+      <div class="intg-desc">Attach and track enablement content shared with customers.</div>
+    </div>
+    <span class="intg-coming-tag">Soon</span>
+  </div>
+
+  <div class="intg-item dimmed" style="padding-bottom:24px">
+    <div class="intg-logo" style="background:var(--subtle-bg);border:1px solid var(--border);color:var(--text-muted)">C</div>
+    <div class="intg-info">
+      <div class="intg-name">Confluence</div>
+      <div class="intg-desc">Pull internal account notes and product documentation.</div>
+    </div>
+    <span class="intg-coming-tag">Soon</span>
+  </div>
+</div>
+</body>
+</html>

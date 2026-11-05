@@ -1,0 +1,5 @@
+Contact: mailto:{{SUPPORT_EMAIL}}
+Expires: 2027-05-05T00:00:00Z
+Policy: {{PUBLIC_BASE_URL}}/security/vulnerability-disclosure
+Preferred-Languages: en
+Canonical: {{PUBLIC_BASE_URL}}/.well-known/security.txt

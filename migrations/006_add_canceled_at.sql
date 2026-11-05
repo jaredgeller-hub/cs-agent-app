@@ -1,0 +1,32 @@
+-- Customers canceled_at support. Adds a single timestamp column recording
+-- when a subscription actually ended — set by the cancel webhook in Step 2
+-- (customer.subscription.deleted), currently unset everywhere.
+--
+-- canceled_at is distinct from the two adjacent timestamps:
+--   - subscription_cancels_at = the SCHEDULED future end-date carried with
+--     cancel_at_period_end=TRUE (the user chose to cancel but still has
+--     access until the period ends).
+--   - deleted_at              = the soft-delete marker (is_deleted=TRUE).
+-- canceled_at is the ACTUAL end moment, used by the 30-day cancel-purge
+-- sweep (Step 2) to find subscriptions past the retention window. Today the
+-- /pilot/health "canceled_users_in_privacy_breach" check proxies this with
+-- trial_ends_at because no canceled_at column exists; this migration adds it.
+--
+-- Idempotent (ADD COLUMN IF NOT EXISTS), safe to re-run. Ships with no
+-- backfill UPDATE: there is no reliable historical cancel timestamp to
+-- backfill from, and the sweep that reads this column does not exist yet.
+-- Nullable; null until a cancellation fires.
+--
+-- product/database.py init_db() also runs this ALTER inline on every boot
+-- (ADD COLUMN IF NOT EXISTS) and Base.metadata.create_all picks the column
+-- up for fresh deploys / test envs, so this file is the documented record
+-- rather than the only path to the new schema.
+--
+-- Run on Render Postgres after deploying the schema commit:
+--   psql $DATABASE_URL -f migrations/006_add_canceled_at.sql
+--
+-- Rollback (if needed):
+--   ALTER TABLE customers DROP COLUMN canceled_at;
+
+ALTER TABLE customers
+    ADD COLUMN IF NOT EXISTS canceled_at TIMESTAMP;

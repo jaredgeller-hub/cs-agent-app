@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CS Agent</title>
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/dm-sans-600.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Serif Display';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/dm-serif-display-400.woff2') format('woff2');
+  }
+</style>
+<style>
+  /* ── Design tokens ──────────────────────────────────────────── */
+  :root {
+    --accent:        #2C5F8A;
+    --accent-warm:   #B85C38;
+    --sarah-bubble:  #2C5F8A;
+    --subtle-bg:     #EDEAE6;
+    --sidebar-bg:    #F5F3F0;
+    --border:        #DDD9D3;
+    --text:          #1A1A1A;
+    --text-muted:    #6B6560;
+    --bubble-agent:  #FFFFFF;
+    --font-sans:     'DM Sans', -apple-system, sans-serif;
+    --font-serif:    'DM Serif Display', Georgia, serif;
+    --radius:        10px;
+    --sidebar-w:     220px;
+    --right-w:       240px;
+    --tag-cta:       #8B4513;
+    --tag-cta-bg:    #FEF3E8;
+  }
+
+  /* ── Reset ──────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: var(--font-sans); color: var(--text); background: var(--subtle-bg); }
+
+  /* ── Layout ──────────────────────────────────────────────────── */
+  #shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── Header ──────────────────────────────────────────────────── */
+  #header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 52px;
+    background: var(--accent);
+    color: #fff;
+    flex-shrink: 0;
+  }
+  #header .brand {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    letter-spacing: 0.01em;
+  }
+  #header .csm-name {
+    font-size: 13px;
+    opacity: 0.85;
+  }
+  #header a.signout {
+    font-size: 13px;
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    margin-left: 16px;
+  }
+  #header a.signout:hover { color: #fff; }
+
+  /* ── Body row ────────────────────────────────────────────────── */
+  #body-row {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ── Left sidebar ────────────────────────────────────────────── */
+  #left-sidebar {
+    width: var(--sidebar-w);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow-y: auto;
+  }
+  #left-sidebar h3 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 16px 16px 8px;
+  }
+  /* ── Timeline track (left sidebar) ─────────────────────────── */
+  .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 0 12px 0 16px;
+    cursor: default;
+  }
+  .timeline-track {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 16px;
+    margin-right: 8px;
+    padding-top: 4px;
+  }
+  .timeline-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  @keyframes timeline-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.5; transform: scale(1.35); }
+  }
+  .timeline-item.active .timeline-dot {
+    background: var(--accent);
+    animation: timeline-pulse 1.5s ease-in-out infinite;
+  }
+  .timeline-item.past   .timeline-dot { background: var(--text-muted); opacity: 0.5; }
+  .timeline-connector {
+    width: 2px;
+    min-height: 16px;
+    background: var(--border);
+    margin-top: 3px;
+    flex: 1;
+  }
+  .timeline-content { padding-bottom: 12px; min-width: 0; }
+  .timeline-content .time {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 1px;
+  }
+  .timeline-content .label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .timeline-item.past .timeline-content .label { color: var(--text-muted); }
+
+  /* ── Chat column ─────────────────────────────────────────────── */
+  #chat-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Message rows ────────────────────────────────────────────── */
+  .msg-row { display: flex; }
+  .msg-agent { justify-content: flex-start; }
+  .msg-user  { justify-content: flex-end; }
+
+  .bubble {
+    max-width: 72%;
+    padding: 11px 14px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .msg-agent .bubble {
+    background: var(--bubble-agent);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    color: var(--text);
+  }
+  .msg-user .bubble {
+    background: var(--sarah-bubble);
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+
+  /* ── Draft block ─────────────────────────────────────────────── */
+  .draft-block {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-warm);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    max-width: 72%;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .draft-block .draft-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--accent-warm);
+    margin-bottom: 6px;
+  }
+  .draft-block .draft-body {
+    color: var(--text);
+    white-space: pre-wrap;
+    outline: none;
+  }
+  .draft-block .draft-body[contenteditable="true"] {
+    background: #FFFBF8;
+    border-radius: 4px;
+    padding: 4px;
+    min-height: 60px;
+  }
+  .draft-block .draft-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .draft-block button {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .draft-block button.primary {
+    background: var(--accent-warm);
+    border-color: var(--accent-warm);
+    color: #fff;
+  }
+  .draft-block button:hover { opacity: 0.85; }
+
+  /* ── Flag feedback button ───────────────────────────────────── */
+  .flag-btn {
+    display: inline-block;
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .flag-btn:hover { opacity: 1; }
+  .flag-btn.flagged { color: #B85C38; opacity: 1; cursor: default; }
+  .bubble.flagged { border-left-color: #B85C38; }
+
+  /* ── Typing indicator ────────────────────────────────────────── */
+  #typing-row { display: none; }
+  .typing-dots { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
+  .typing-dots span {
+    width: 7px; height: 7px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typing-bounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40%           { transform: translateY(-5px); opacity: 1; }
+  }
+
+  /* ── Input bar ───────────────────────────────────────────────── */
+  #input-bar {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 12px 20px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--subtle-bg);
+    flex-shrink: 0;
+  }
+  #user-input {
+    flex: 1;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    color: var(--text);
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 9px 13px;
+    resize: none;
+    min-height: 40px;
+    max-height: 120px;
+    line-height: 1.5;
+    outline: none;
+    overflow-y: auto;
+  }
+  #user-input:focus { border-color: var(--accent); }
+  #send-btn {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    font-weight: 500;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 9px 18px;
+    cursor: pointer;
+    height: 40px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  #send-btn:hover { opacity: 0.9; }
+  #send-btn:disabled { opacity: 0.5; cursor: default; }
+
+  /* ── Right sidebar ───────────────────────────────────────────── */
+  #right-sidebar {
+    width: var(--right-w);
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.2s ease;
+    overflow: hidden;
+  }
+  #right-sidebar.collapsed { width: 36px; }
+  #right-sidebar-inner { min-width: var(--right-w); }
+
+  #right-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 8px 8px 4px;
+    flex-shrink: 0;
+  }
+  #right-toggle button {
+    font-size: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  #right-toggle button:hover { background: var(--border); }
+
+  #right-sidebar h3 {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 4px 16px 8px;
+  }
+  /* ── Account rows (right sidebar) ───────────────────────────── */
+  .account-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 10px;
+    padding: 7px 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .account-row:hover { background: var(--subtle-bg); }
+  .health-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .health-dot.health-ok    { background: #2E7D52; }
+  .health-dot.health-watch { background: #B85C38; }
+  .health-dot.health-risk  { background: #C0392B; }
+  .account-row .acct-name {
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .renewal-badge {
+    font-size: 10px;
+    color: var(--tag-cta);
+    background: var(--tag-cta-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <!-- Header -->
+  <header id="header">
+    <span class="brand">CS Agent</span>
+    <div style="display:flex;align-items:center;gap:4px;">
+      <span class="csm-name" id="csm-name-display"></span>
+      <a href="/logout" class="signout">Sign out</a>
+    </div>
+  </header>
+
+  <!-- Body row -->
+  <div id="body-row">
+
+    <!-- Left sidebar: Today timeline -->
+    <aside id="left-sidebar">
+      <h3>Today</h3>
+      <div id="timeline-list">
+        <!-- Populated by JS from /app/today-digest or static -->
+      </div>
+    </aside>
+
+    <!-- Chat column -->
+    <div id="chat-col">
+      <div id="messages">
+        <!-- Messages appended here -->
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="msg-row msg-agent" id="typing-row">
+        <div class="bubble" style="padding:0;border:1px solid var(--border);border-left:3px solid var(--accent);">
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input bar -->
+      <div id="input-bar">
+        <textarea
+          id="user-input"
+          placeholder="Ask about an account, draft a message, prepare for a call…"
+          rows="1"
+        ></textarea>
+        <button id="send-btn">Send</button>
+      </div>
+    </div>
+
+    <!-- Right sidebar: Accounts -->
+    <aside id="right-sidebar">
+      <div id="right-toggle">
+        <button id="toggle-btn" title="Toggle accounts panel">&#x25B6;</button>
+      </div>
+      <div id="right-sidebar-inner">
+        <h3>Accounts</h3>
+        <div id="account-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </aside>
+
+  </div><!-- /body-row -->
+</div><!-- /shell -->
+
+<script>
+(function () {
+  'use strict';
+
+  // ── State ────────────────────────────────────────────────────────
+  let chatHistory = [];   // [{role, content}, ...] last 20 entries
+  let sessionData = null;
+
+  // ── DOM refs ─────────────────────────────────────────────────────
+  const messagesEl  = document.getElementById('messages');
+  const inputEl     = document.getElementById('user-input');
+  const sendBtn     = document.getElementById('send-btn');
+  const typingRow   = document.getElementById('typing-row');
+  const timelineEl  = document.getElementById('timeline-list');
+  const accountsEl  = document.getElementById('account-list');
+  const nameDisplay = document.getElementById('csm-name-display');
+  const rightBar    = document.getElementById('right-sidebar');
+  const toggleBtn   = document.getElementById('toggle-btn');
+
+  // ── Right sidebar collapse ───────────────────────────────────────
+  const COLLAPSED_KEY = 'cs_agent_sidebar_collapsed';
+  function applyCollapse(collapsed) {
+    rightBar.classList.toggle('collapsed', collapsed);
+    toggleBtn.innerHTML = collapsed ? '&#x25C0;' : '&#x25B6;';
+    sessionStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+  }
+  applyCollapse(sessionStorage.getItem(COLLAPSED_KEY) === '1');
+  toggleBtn.addEventListener('click', () => {
+    applyCollapse(!rightBar.classList.contains('collapsed'));
+  });
+
+  // ── Textarea auto-expand ─────────────────────────────────────────
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  // ── Send on Enter (Shift+Enter = newline) ────────────────────────
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  sendBtn.addEventListener('click', sendMessage);
+
+  // ── Markdown renderer (agent messages only) ──────────────────────
+  function renderMarkdown(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+  }
+
+  // ── Append a message bubble ──────────────────────────────────────
+  function appendMessage(role, text) {
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + (role === 'user' ? 'msg-user' : 'msg-agent');
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    if (role === 'user') {
+      bubble.textContent = text;
+    } else {
+      bubble.innerHTML = renderMarkdown(text);
+    }
+    row.appendChild(bubble);
+    if (role !== 'user') {
+      const flagBtn = document.createElement('button');
+      flagBtn.className = 'flag-btn';
+      flagBtn.textContent = '⚑ Flag';
+      flagBtn.title = 'Flag this response as feedback';
+      flagBtn.addEventListener('click', () => flagFeedback(text, flagBtn, bubble));
+      row.appendChild(flagBtn);
+    }
+    messagesEl.appendChild(row);
+    scrollBottom();
+    return bubble;
+  }
+
+  async function flagFeedback(messageText, btn, bubble) {
+    if (btn.classList.contains('flagged')) return;
+    btn.disabled = true;
+    fetch('/app/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message_text: messageText }),
+    }).catch(() => {});
+    btn.textContent = '✓ Flagged';
+    btn.classList.add('flagged');
+    bubble.classList.add('flagged');
+  }
+
+  // ── Append a draft block ─────────────────────────────────────────
+  function appendDraft(label, draftText) {
+    const row = document.createElement('div');
+    row.className = 'msg-row msg-agent';
+
+    const block = document.createElement('div');
+    block.className = 'draft-block';
+
+    const lbl = document.createElement('div');
+    lbl.className = 'draft-label';
+    lbl.textContent = label || 'Draft';
+
+    const body = document.createElement('div');
+    body.className = 'draft-body';
+    body.textContent = draftText;
+
+    const actions = document.createElement('div');
+    actions.className = 'draft-actions';
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit draft';
+    editBtn.addEventListener('click', () => {
+      const editing = body.contentEditable === 'true';
+      body.contentEditable = editing ? 'false' : 'true';
+      editBtn.textContent = editing ? 'Edit draft' : 'Done editing';
+      if (!editing) body.focus();
+    });
+
+    actions.appendChild(editBtn);
+    block.appendChild(lbl);
+    block.appendChild(body);
+    block.appendChild(actions);
+    row.appendChild(block);
+    messagesEl.appendChild(row);
+    scrollBottom();
+  }
+
+  function scrollBottom() {
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function showTyping(show) {
+    typingRow.style.display = show ? 'flex' : 'none';
+    if (show) messagesEl.appendChild(typingRow);
+    if (show) scrollBottom();
+  }
+
+  // ── Send message ─────────────────────────────────────────────────
+  async function sendMessage() {
+    const text = inputEl.value.trim();
+    if (!text || sendBtn.disabled) return;
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendMessage('user', text);
+    chatHistory.push({ role: 'user', content: text });
+
+    showTyping(true);
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: chatHistory.slice(-20),
+        }),
+      });
+      const data = await res.json();
+      showTyping(false);
+
+      const reply = data.reply || '(no response)';
+      appendMessage('assistant', reply);
+      chatHistory.push({ role: 'assistant', content: reply });
+
+      // Keep last 20 entries (10 turns)
+      if (chatHistory.length > 20) chatHistory = chatHistory.slice(-20);
+      fetchTimeline();
+
+    } catch (err) {
+      showTyping(false);
+      appendMessage('assistant', 'Something went wrong — please try again.');
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+
+  // ── Populate today timeline ──────────────────────────────────────
+  function renderTimeline(events) {
+    timelineEl.innerHTML = '';
+    if (!events || events.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:8px 16px;font-size:13px;color:var(--text-muted);font-style:italic;';
+      empty.textContent = 'No events today';
+      timelineEl.appendChild(empty);
+      return;
+    }
+    const firstActiveIdx = events.findIndex(e => !e.past);
+    events.forEach((evt, i) => {
+      const isLast   = i === events.length - 1;
+      const isActive = i === firstActiveIdx;
+      const item     = document.createElement('div');
+      item.className = 'timeline-item' +
+        (isActive ? ' active' : '') +
+        (evt.past  ? ' past'   : '');
+
+      const track = document.createElement('div');
+      track.className = 'timeline-track';
+      const dot = document.createElement('div');
+      dot.className = 'timeline-dot';
+      track.appendChild(dot);
+      if (!isLast) {
+        const connector = document.createElement('div');
+        connector.className = 'timeline-connector';
+        track.appendChild(connector);
+      }
+
+      const content = document.createElement('div');
+      content.className = 'timeline-content';
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'time';
+      timeSpan.textContent = evt.time || '';
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'label';
+      labelSpan.textContent = evt.label || '';
+      content.appendChild(timeSpan);
+      content.appendChild(labelSpan);
+
+      item.appendChild(track);
+      item.appendChild(content);
+      timelineEl.appendChild(item);
+    });
+  }
+
+  // ── Populate accounts sidebar ────────────────────────────────────
+  function renderAccounts(accounts) {
+    accountsEl.innerHTML = '';
+    if (!accounts || accounts.length === 0) {
+      const empty = document.createElement('div');
+      empty.style.cssText = 'padding:8px 16px;font-size:12px;color:var(--text-muted);font-style:italic;';
+      empty.textContent = 'No accounts found';
+      accountsEl.appendChild(empty);
+      return;
+    }
+    accounts.forEach(acct => {
+      const row = document.createElement('div');
+      row.className = 'account-row';
+
+      const score    = acct.health_score;
+      const dotClass = (score === null || score === undefined) ? 'health-risk'
+                     : score >= 80 ? 'health-ok'
+                     : score >= 65 ? 'health-watch'
+                     : 'health-risk';
+      const dot = document.createElement('div');
+      dot.className = 'health-dot ' + dotClass;
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'acct-name';
+      nameEl.textContent = acct.name;
+
+      row.appendChild(dot);
+      row.appendChild(nameEl);
+
+      if (acct.renewal_days !== null && acct.renewal_days !== undefined && acct.renewal_days <= 90) {
+        const badge = document.createElement('div');
+        badge.className = 'renewal-badge';
+        badge.textContent = acct.renewal_days + 'd';
+        row.appendChild(badge);
+      }
+
+      row.addEventListener('click', () => {
+        inputEl.value = `Tell me about ${acct.name}`;
+        inputEl.dispatchEvent(new Event('input'));
+        inputEl.focus();
+      });
+      accountsEl.appendChild(row);
+    });
+  }
+
+  // ── Fetch sidebars ────────────────────────────────────────────────
+  async function fetchAccounts() {
+    try {
+      const res = await fetch('/app/accounts');
+      if (!res.ok) return;
+      const data = await res.json();
+      renderAccounts(data.accounts);
+    } catch { /* fail silently */ }
+  }
+
+  async function fetchTimeline() {
+    try {
+      const res = await fetch('/app/timeline');
+      if (!res.ok) return;
+      const data = await res.json();
+      renderTimeline(data.events);
+    } catch { /* fail silently */ }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────
+  async function init() {
+    // 1. Load session
+    try {
+      const sr = await fetch('/app/session');
+      if (!sr.ok) { window.location = '/login'; return; }
+      sessionData = await sr.json();
+      nameDisplay.textContent = sessionData.name || sessionData.csm_id || '';
+    } catch {
+      window.location = '/login';
+      return;
+    }
+
+    // 2. Load today's digest (static timeline items for now)
+    const greeting = 'Good morning, ' + (sessionData.name || 'there').replace(/\.+$/, '') + '.';
+    let digestText = null;
+    try {
+      const dr = await fetch('/app/today-digest');
+      if (dr.ok) {
+        const dd = await dr.json();
+        digestText = dd.digest || null;
+      }
+    } catch { /* no digest */ }
+
+    // 3. Render welcome
+    if (digestText) {
+      appendMessage('assistant', digestText);
+      chatHistory.push({ role: 'assistant', content: digestText });
+    } else {
+      const now = new Date();
+      const digestCutoff = new Date();
+      digestCutoff.setHours(8, 30, 0, 0); // 8:30 AM local time
+      if (now >= digestCutoff) {
+        const errRow = document.createElement('div');
+        errRow.className = 'msg-row msg-agent';
+        const errBubble = document.createElement('div');
+        errBubble.className = 'bubble';
+        errBubble.style.cssText = 'border-left-color: #B85C38; color: var(--text-muted);';
+        errBubble.innerHTML = '&#9888;&#xFE0E; Today\'s briefing ran into an issue. We\'re looking into it. Try refreshing in a bit, or ask me anything in the chat below.';
+        errRow.appendChild(errBubble);
+        messagesEl.appendChild(errRow);
+        scrollBottom();
+      } else {
+        appendMessage('assistant',
+          'Your daily briefing will be ready shortly. In the meantime, ask me about ' +
+          'any account — I\'m here to help.'
+        );
+      }
+    }
+
+    // 4. Populate sidebars from live routes
+    await Promise.all([fetchAccounts(), fetchTimeline()]);
+
+    inputEl.focus();
+  }
+
+  // ── Alert polling ─────────────────────────────────────────────────
+  let lastAlertCheck = new Date().toISOString();
+
+  async function pollAlerts() {
+    try {
+      const res = await fetch('/app/alerts?since=' + encodeURIComponent(lastAlertCheck));
+      if (!res.ok) return;
+      const data = await res.json();
+      lastAlertCheck = new Date().toISOString();
+      const newAlerts = data.alerts || [];
+      newAlerts.forEach(alert => {
+        if (alert.text) appendMessage('assistant', alert.text);
+        if (alert.draft) appendDraft('Suggested draft — review before sending', alert.draft);
+      });
+      if (newAlerts.length > 0) fetchTimeline();
+    } catch { /* fail silently */ }
+  }
+
+  init().then(() => { setInterval(pollAlerts, 60000); });
+})();
+</script>
+</body>
+</html>

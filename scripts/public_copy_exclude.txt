@@ -1,0 +1,49 @@
+# Paths excluded from the public copy built by scripts/build_public_copy.py.
+#
+# One gitignore-style pattern per line, matched against repo-relative paths:
+#   - a plain path matches that file
+#   - "dir/**" matches everything under dir/
+#   - "*" matches within one path segment
+#   - a leading "!" re-includes paths an earlier pattern excluded
+# Later lines win. Blank lines and lines starting with "#" are ignored.
+#
+# Only tracked files can ever reach the copy (it is built with git archive),
+# so git-ignored files (.env, tokens/, gmail_*.json, notes/, ...) never need
+# listing here.
+
+# Private or internal documents
+CLAUDE.md
+CODE_REVIEW.html
+CS_Agent_Demo_Script.docx
+PRODUCT_BUILD_SPEC.md
+PILOT_PRODUCT_BUILD_SPEC.md
+
+# Deployment configs with real identities (the *.example.json copies ship)
+org_config.json
+org_config.json.bak
+pilot_config.json
+
+# Internal docs: sessions, plans, drafts, product notes, build notes.
+# The security policies are kept: the app renders them at /security/*.
+docs/**
+!docs/policies/**
+
+# Build-only inputs consumed by the script
+public/**
+scripts/public_copy_markers.json
+
+# Demo leftovers. Nothing in the copy imports these, loads them at startup or
+# tests them: main.py recreates store.json empty on demand and skips
+# calendar.json and engagement.json when absent. seed_csm_data.py and
+# seed_demo_day.py stay (tests import them), and so does gmail_auth_setup.py
+# (scripts/onboard_csm.py runs it).
+store.json
+calendar.json
+engagement.json
+transcripts/**
+share_demo.sh
+seed_sfdc.py
+seed_store.py
+scripts/reauth_sarah_for_discovery.py
+scripts/seed_c1_demo.py
+scripts/seed_postcall_alert.py

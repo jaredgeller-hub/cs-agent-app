@@ -1,0 +1,56 @@
+{
+  "org_name": "Pilot Org",
+  "pilot_mode": "live",
+  "crm_type": "hubspot",
+  "timezone": "America/Chicago",
+  "digest_time": "08:00",
+  "absence_check_times": [
+    "08:00",
+    "12:00",
+    "16:00"
+  ],
+  "csms": {
+    "user_ExampleDemoCsm0000000000000": {
+      "name": "Sarah C.",
+      "email": "demo@example.com",
+      "timezone": "America/Chicago",
+      "pilot_mode": "live",
+      "accounts": [
+        "Meridian Health",
+        "Beacon Financial",
+        "Sutton Retail",
+        "Northgate Logistics",
+        "Pinnacle Group",
+        "Central Banking Solutions",
+        "Pulse Healthcare",
+        "Horizon Education",
+        "Atlas Medical Systems",
+        "Crestview Technologies",
+        "Silverline Finance",
+        "Coastal Health Network",
+        "Nova Aerospace",
+        "Vantage Energy",
+        "Summit Consulting"
+      ],
+      "notifications": {
+        "email": true
+      }
+    },
+    "user_ExampleReviewer000000000000": {
+      "name": "Reviewer Test",
+      "email": "reviewer@example.com",
+      "timezone": "America/Detroit",
+      "pilot_mode": "live",
+      "accounts": [
+        "Meridian Health",
+        "Beacon Financial",
+        "Northgate Logistics",
+        "Pulse Healthcare",
+        "Central Banking Solutions"
+      ],
+      "notifications": {
+        "email": true
+      }
+    }
+  }
+}

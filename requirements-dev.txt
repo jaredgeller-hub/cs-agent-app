@@ -1,0 +1,5 @@
+# Test-only dependencies. Not installed in production (Render uses
+# requirements.txt only). Add to CI workflow alongside requirements.txt.
+
+pytest==8.4.2
+pytest-timeout==2.4.0

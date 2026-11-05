@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Support · CS Agent by {{COMPANY_NAME}}</title>
+<meta name="description" content="Get help with CS Agent. Contact support, find answers to common questions, and learn how to get the most out of your CS Agent workspace.">
+<style>
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('/fonts/dm-sans-400.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url('/fonts/dm-sans-500.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url('/fonts/dm-sans-600.woff2') format('woff2');
+  }
+  @font-face {
+    font-family: 'DM Sans';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('/fonts/dm-sans-700.woff2') format('woff2');
+  }
+</style>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    line-height: 1.6;
+    margin: 0;
+    padding: 56px 24px 80px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+  header { margin-bottom: 8px; }
+  .eyebrow { font-size: 13px; font-weight: 500; color: #6b7280; letter-spacing: 0.06em; text-transform: uppercase; margin: 0 0 12px; }
+  h1 { font-size: 34px; font-weight: 700; margin: 0 0 12px; letter-spacing: -0.025em; color: #0a0a0a; }
+  .tagline { font-size: 18px; color: #374151; margin: 0 0 0; }
+  hr.divider { border: 0; border-top: 1px solid #e5e7eb; margin: 36px 0; }
+  h2 { font-size: 22px; font-weight: 600; margin: 44px 0 14px; letter-spacing: -0.015em; color: #0a0a0a; }
+  h3 { font-size: 17px; font-weight: 600; margin: 26px 0 10px; color: #0a0a0a; }
+  p { font-size: 16px; color: #374151; margin: 0 0 14px; }
+  ul { padding-left: 22px; margin: 0 0 16px; }
+  li { font-size: 16px; color: #374151; margin-bottom: 10px; }
+  a { color: #2563eb; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .contact-card {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 24px 0 32px;
+  }
+  .contact-card p { margin: 0 0 6px; }
+  .contact-card a { font-size: 18px; font-weight: 600; color: #2563eb; }
+  .contact-card .note { font-size: 14px; color: #6b7280; margin: 8px 0 0; }
+  strong { font-weight: 600; color: #0a0a0a; }
+  .footer { color: #6b7280; font-size: 14px; text-align: center; margin-top: 64px; padding-top: 28px; border-top: 1px solid #e5e7eb; }
+  .footer a { color: #6b7280; }
+  .footer a + a::before { content: " · "; margin: 0 6px; color: #d1d5db; }
+  @media (max-width: 600px) {
+    body { padding: 32px 18px 56px; }
+    h1 { font-size: 28px; }
+    h2 { font-size: 20px; margin-top: 36px; }
+    h3 { font-size: 16px; }
+    .contact-card { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <p class="eyebrow">CS Agent by {{COMPANY_NAME}}</p>
+  <h1>Support</h1>
+  <p class="tagline">We're here to help. Expect a reply within one business day.</p>
+</header>
+
+<hr class="divider">
+
+<h2>Contact us</h2>
+<p>For any question about CS Agent - your account, your integrations, billing, or anything else - email us directly.</p>
+
+<div class="contact-card">
+  <p><strong>Email support</strong></p>
+  <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a>
+  <p class="note">We respond within one business day. Include your account email address in your message so we can pull up your account quickly.</p>
+</div>
+
+<p>You can also find integration setup guides and documentation at <a href="/docs">cs-agent.app/docs</a>.</p>
+
+<h2>Common questions</h2>
+
+<h3>How do I connect Google Workspace?</h3>
+<p>During onboarding, CS Agent will prompt you to connect your Google account. You can also connect or reconnect Google from your Settings page at any time. CS Agent requires Gmail, Google Calendar, and Google Drive (for Meet transcripts) to deliver your daily digest.</p>
+
+<h3>How do I connect my CRM?</h3>
+<p>CS Agent supports HubSpot and Gainsight. You can connect either from Settings. Once connected, CS Agent surfaces account context from your CRM alongside signals from your Google Workspace. See the <a href="/docs#crm">integration guide</a> for step-by-step instructions.</p>
+
+<h3>How do I connect Slack?</h3>
+<p>Slack integration lets CS Agent draft Slack messages for your approval and surface unresponded Slack threads mentioning your accounts. Connect Slack from the Communications section in Settings. See the <a href="/docs#slack">Slack guide</a> for details.</p>
+
+<h3>How do I connect Zoom?</h3>
+<p>Zoom integration lets CS Agent retrieve transcripts from your customer calls and surface post-call recaps and unrecapped-call alerts. Connect Zoom from the Communications section in Settings. See the <a href="/docs#zoom">Zoom guide</a> for step-by-step instructions.</p>
+
+<h3>How do I disconnect an integration?</h3>
+<p>Go to Settings and find the integration you want to disconnect. Each integration has its own Disconnect option. Disconnecting removes CS Agent's access token and stops new data from being pulled for that integration. Previously stored signals are cleared per our <a href="/privacy">Privacy Policy</a>.</p>
+
+<h3>How do I delete my data?</h3>
+<p>You can delete all your data immediately using the "Delete my data" button in Settings under "Data and privacy." This permanently removes your account and all associated data. You can also cancel your subscription, which triggers a complete purge within 30 days.</p>
+
+<h3>What is CS Agent's pricing?</h3>
+<p>CS Agent is $39 per CSM per month, billed monthly. Every new account starts with a 14-day free trial - no credit card required. You can cancel at any time from your Settings page.</p>
+
+<h3>I connected an integration but CS Agent isn't pulling data from it. What's wrong?</h3>
+<p>The most common cause is an expired or missing OAuth token. Go to Settings and check whether the connection status shows a warning. If it does, use the Reconnect option to re-authorize. If the issue persists, email us at <a href="mailto:{{SUPPORT_EMAIL}}">{{SUPPORT_EMAIL}}</a> with your account email and we'll investigate.</p>
+
+<h3>When does my daily digest arrive?</h3>
+<p>CS Agent generates your digest at 7am in your local timezone and it's available in your CS Agent workspace when you open it in the morning. If no digest is showing, try refreshing the page. If the issue persists, contact us.</p>
+
+<div class="footer">
+  <a href="/">cs-agent.app</a><a href="/docs">Documentation</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a>
+</div>
+
+</div>
+</body>
+</html>

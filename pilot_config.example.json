@@ -1,0 +1,10 @@
+{
+  "csm_id": "sarah_c",
+  "name": "Sarah C.",
+  "email": "demo@example.com",
+  "crm": "salesforce",
+  "crm_api_key_env": "SALESFORCE_USE_MOCK",
+  "email_notifications": true,
+  "digest_time": "08:00",
+  "timezone": "America/Chicago"
+}
