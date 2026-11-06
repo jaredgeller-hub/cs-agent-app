@@ -9,6 +9,12 @@ This README explains how to run your own copy of CS Agent: what you need, how to
 
 ---
 
+## Demo
+
+A 2.5-minute walkthrough of a CSM's day with CS Agent, using demo data.
+
+https://github.com/user-attachments/assets/66a9cd32-8701-4fdd-8059-6c91650949b1
+
 ## What CS Agent is
 
 CS Agent is a FastAPI backend (`main.py` plus the `product/` package) and a React frontend (`frontend/`, built with Vite). CSMs sign in with Clerk at `/app`, connect Google and their CRM, and get a daily briefing, account context, alerts and drafted actions. Claude (Anthropic) does the reasoning. OAuth tokens are encrypted before they are stored in Postgres.
