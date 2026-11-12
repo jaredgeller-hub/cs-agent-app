@@ -260,6 +260,6 @@ CS Agent is licensed under the [PolyForm Small Business License 1.0.0](LICENSE).
 
 - **Free** for individuals and small businesses as the license defines them: use for the benefit of a company (including a sole proprietorship) with fewer than 100 employees and independent contractors and less than 1,000,000 USD (2019, inflation-adjusted) total revenue in the prior tax year.
 - **Larger companies** need a commercial license.
-- **Commercial licensing:** CONTACT_PLACEHOLDER
+- **Commercial licensing:** hello@alwaison.com
 
 See [LICENSE](LICENSE) for the full terms.
