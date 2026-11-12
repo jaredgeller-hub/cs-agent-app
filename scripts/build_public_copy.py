@@ -16,9 +16,11 @@ Steps:
      legal pages. The live files in this repo are not touched.
   4. Verify: scan EVERY file in the copy for private values using the
      SHA-256 markers in scripts/public_copy_markers.json (read from REF; the
-     file itself is excluded from the copy). The only allowance is the
-     company name on LICENSE's "Required Notice:" line. Reports file:line
-     and kind, never the value.
+     file itself is excluded from the copy). The only allowances are the
+     company name on LICENSE's "Required Notice:" line, the company name on
+     exact lines listed in allowed_company_lines, and the operator contact
+     address on exact lines listed in allowed_contact_lines. Reports
+     file:line and kind, never the value.
   5. Run gitleaks on the copy. If gitleaks is not installed, print how to
      install it and exit non-zero: the copy is not verified clean.
 
@@ -200,6 +202,9 @@ def load_markers(ref: str = "HEAD") -> dict:
         "allowed_company_lines": {
             path: set(hashes) for path, hashes in data.get("allowed_company_lines", {}).items()
         },
+        "allowed_contact_lines": {
+            path: set(hashes) for path, hashes in data.get("allowed_contact_lines", {}).items()
+        },
     }
 
 
@@ -222,7 +227,8 @@ def _has_substring(word: str, hashes: set, lengths: list) -> bool:
     return False
 
 
-def line_hits(line: str, m: dict, allow_company: bool = False) -> list[str]:
+def line_hits(line: str, m: dict, allow_company: bool = False,
+              allow_contact: bool = False) -> list[str]:
     """Kinds of private value found on one line (never the value)."""
     hits: list[str] = []
     low = line.lower()
@@ -241,7 +247,7 @@ def line_hits(line: str, m: dict, allow_company: bool = False) -> list[str]:
         if _h(c.group(0)) in m["clerk_ids"]:
             hits.append("production Clerk id")
     for e in _EMAIL.finditer(line):
-        if _h(e.group(1).lower()) in m["email_domains"]:
+        if not allow_contact and _h(e.group(1).lower()) in m["email_domains"]:
             hits.append("operator contact address")
     for d in _DOMAIN.finditer(line):
         parts = d.group(1).lower().split(".")
@@ -255,7 +261,10 @@ def verify_markers(out_dir: str | Path, markers: dict) -> list[str]:
     out_dir. No file is skipped; binary files are scanned as decoded bytes.
     The company name is allowed only on LICENSE's Required Notice line and on
     lines whose exact content hash is listed in allowed_company_lines (the
-    two README credit lines). Every other check applies to every line."""
+    README credit and licensing lines). The operator contact address is
+    allowed only on lines whose exact content hash is listed in
+    allowed_contact_lines (the README licensing line). Every other check
+    applies to every line."""
     out = Path(out_dir)
     findings: list[str] = []
     for p in sorted(out.rglob("*")):
@@ -264,12 +273,16 @@ def verify_markers(out_dir: str | Path, markers: dict) -> list[str]:
         rel = p.relative_to(out).as_posix()
         text = p.read_bytes().decode("utf-8", errors="ignore")
         allowed_hashes = markers.get("allowed_company_lines", {}).get(rel, set())
+        contact_hashes = markers.get("allowed_contact_lines", {}).get(rel, set())
         for n, line in enumerate(text.splitlines(), 1):
+            line_hash = _h(line)
             allow = (
                 (rel == LICENSE_FILE and line.startswith(LICENSE_NOTICE_PREFIX))
-                or _h(line) in allowed_hashes
+                or line_hash in allowed_hashes
             )
-            for kind in dict.fromkeys(line_hits(line, markers, allow_company=allow)):
+            allow_contact = line_hash in contact_hashes
+            for kind in dict.fromkeys(line_hits(line, markers, allow_company=allow,
+                                                allow_contact=allow_contact)):
                 findings.append(f"{rel}:{n}: {kind}")
     return findings
 

@@ -250,6 +250,33 @@ def test_verify_reports_location_not_value(tmp_path):
             assert value not in line
 
 
+def test_contact_allowance_is_per_file_exact_line(tmp_path):
+    """allowed_contact_lines exempts only the exact listed line, only in the
+    listed file, and only from the contact check. Every other line with the
+    address still fails."""
+    allowed = "contact: hi@contact.test"
+    markers = {
+        "substrings": set(), "substring_lengths": [], "tokens": set(), "clerk_ids": set(),
+        "email_domains": {bpc._h("contact.test")}, "domains_anywhere": {bpc._h("blocked.test")},
+        "allowed_contact_lines": {"README.md": {bpc._h(allowed)}},
+    }
+    (tmp_path / "README.md").write_text(
+        f"{allowed}\n"
+        "other: hi@contact.test\n"
+        f"{allowed} \n"                      # trailing space: different line
+        f"{allowed} see blocked.test\n"      # other checks still apply
+    )
+    (tmp_path / "other.md").write_text(f"{allowed}\n")  # right line, wrong file
+    found = bpc.verify_markers(tmp_path, markers)
+    assert found == [
+        "README.md:2: operator contact address",
+        "README.md:3: operator contact address",
+        "README.md:4: operator contact address",
+        "README.md:4: personal domain",
+        "other.md:1: operator contact address",
+    ], found
+
+
 # ── Placeholder legal pages and the strict company-name scan ────────────────
 
 import hashlib  # noqa: E402
@@ -334,6 +361,9 @@ def test_scan_fails_on_company_name_anywhere_except_allowed_lines(copy_dir, tmp_
     ]), found
 
 
+_LICENSING_LINE = f"- **Commercial licensing:** hello@{_COMPANY}.com"
+
+
 def test_readme_allowance_is_exact_line_content():
     markers = json.loads((REPO_ROOT / "scripts" / "public_copy_markers.json").read_text()) \
         if _private_repo else None
@@ -342,12 +372,41 @@ def test_readme_allowance_is_exact_line_content():
     allowed = set(markers["allowed_company_lines"]["README.md"])
     assert list(markers["allowed_company_lines"]) == ["README.md"]
     lines = (REPO_ROOT / "README.md").read_text(encoding="utf-8").splitlines()
+    licensing = lines.index(_LICENSING_LINE) + 1
     hits = [i for i, l in enumerate(lines, 1) if hashlib.sha256(l.encode()).hexdigest() in allowed]
-    assert hits == [3, 6]
+    assert hits == [3, 6, licensing]
     mentions = [i for i, l in enumerate(lines, 1) if _COMPANY in l.lower()]
-    assert mentions == [3, 6]
+    assert mentions == [3, 6, licensing]
     # A trailing space is a different line: not allowed.
     assert hashlib.sha256((lines[2] + " ").encode()).hexdigest() not in allowed
+
+
+@pytest.mark.skipif(not _private_repo, reason="markers file not present")
+def test_contact_allowance_is_exact_line_content(tmp_path):
+    """Only the exact README licensing line may carry the operator contact
+    address. Any other line with it still fails, in README or elsewhere."""
+    markers = bpc.load_markers("HEAD")
+    assert list(markers["allowed_contact_lines"]) == ["README.md"]
+    assert markers["allowed_contact_lines"]["README.md"] == {bpc._h(_LICENSING_LINE)}
+    readme_lines = (REPO_ROOT / "README.md").read_text(encoding="utf-8").splitlines()
+    assert readme_lines.count(_LICENSING_LINE) == 1
+
+    address = f"hello@{_COMPANY}.com"
+    (tmp_path / "README.md").write_text(
+        f"{_LICENSING_LINE}\n"
+        f"Questions: {address}\n"
+        f"{_LICENSING_LINE} \n"  # trailing space: different line, not allowed
+    )
+    (tmp_path / "other.md").write_text(f"{_LICENSING_LINE}\n")  # right line, wrong file
+    found = bpc.verify_markers(tmp_path, markers)
+    assert found == [
+        "README.md:2: company name",
+        "README.md:2: operator contact address",
+        "README.md:3: company name",
+        "README.md:3: operator contact address",
+        "other.md:1: company name",
+        "other.md:1: operator contact address",
+    ], found
 
 
 def test_build_reads_swapped_pages_from_ref_not_folder(tmp_path, monkeypatch):
